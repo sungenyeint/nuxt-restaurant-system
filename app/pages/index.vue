@@ -2,52 +2,54 @@
 <template>
   <div class="h-screen flex flex-col">
     <!-- Header -->
-    <div class="bg-white border-b px-6 py-4">
-      <div class="flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-gray-900">POS Dashboard</h1>
-        <!-- Header right controls (hidden for chef) -->
-        <div class="flex items-center space-x-4" v-if="canPlaceOrder">
+    <div class="bg-gradient-to-r from-teal-600 to-indigo-700 text-white shadow-md">
+      <div class="mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+          <h1 class="text-2xl font-bold">POS Dashboard</h1>
+          <!-- Header right controls (hidden for chef) -->
+          <div class="flex items-center space-x-4" v-if="canPlaceOrder">
           <!-- Order type toggle -->
-          <div class="flex rounded overflow-hidden border">
-            <button
-              class="px-3 py-2 text-sm"
-              :class="
-                pos.currentOrder.orderType === 'dine-in'
-                  ? 'bg-gray-200 font-medium'
-                  : 'bg-white'
-              "
-              @click="pos.setOrderType('dine-in')"
-            >
-              Dine-in
-            </button>
-            <button
-              class="px-3 py-2 text-sm"
-              :class="
-                pos.currentOrder.orderType === 'takeaway'
-                  ? 'bg-gray-200 font-medium'
-                  : 'bg-white'
-              "
-              @click="pos.setOrderType('takeaway')"
-            >
-              Takeaway
-            </button>
-          </div>
+            <div class="flex rounded overflow-hidden bg-white/10 p-1">
+              <button
+                class="px-3 py-1.5 text-sm rounded"
+                :class="
+                  pos.currentOrder.orderType === 'dine-in'
+                    ? 'bg-white text-teal-700 font-semibold'
+                    : 'text-white/90'
+                "
+                @click="pos.setOrderType('dine-in')"
+              >
+                Dine-in
+              </button>
+              <button
+                class="px-3 py-1.5 text-sm rounded"
+                :class="
+                  pos.currentOrder.orderType === 'takeaway'
+                    ? 'bg-white text-teal-700 font-semibold'
+                    : 'text-white/90'
+                "
+                @click="pos.setOrderType('takeaway')"
+              >
+                Takeaway
+              </button>
+            </div>
 
-          <button
-            v-if="canPlaceOrder"
-            class="px-3 py-2 rounded bg-green-600 text-white"
-            @click="showCart = true"
-          >
-            Cart ({{ pos.cartItemCount }})
-          </button>
+            <button
+              v-if="canPlaceOrder"
+              class="px-3 py-1.5 rounded bg-white text-teal-700 font-semibold shadow-md hover:scale-105 transition-transform"
+              @click="showCart = true"
+            >
+              Cart ({{ pos.cartItemCount }})
+            </button>
 
-          <button
-            v-if="canViewOrders"
-            class="px-3 py-2 rounded bg-gray-200"
-            @click="showOrders = true"
-          >
-            Active Orders
-          </button>
+            <button
+              v-if="canViewOrders"
+              class="px-3 py-1.5 rounded bg-white/20 text-white/95 hover:bg-white/30 transition"
+              @click="showOrders = true"
+            >
+              Active Orders
+            </button>
+        </div>
         </div>
       </div>
     </div>
@@ -143,7 +145,7 @@
                     (order.status === 'served' || order.status === 'ready')
                   "
                   class="px-3 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700"
-                  @click="updateStatus(order, 'paid')"
+                  @click="openPaymentModal(order)"
                 >
                   Mark Paid
                 </button>
@@ -156,18 +158,88 @@
         </div>
       </div>
     </div>
+
+    <!-- Payment Modal -->
+    <div v-if="showPaymentModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div class="w-full max-w-md bg-white rounded shadow p-6">
+        <h3 class="text-lg font-semibold mb-3">Process Payment</h3>
+        <div class="mb-2 text-sm text-gray-700">Order #{{ (paymentOrder?._id || paymentOrder?.id)?.toString().slice?.(0,6) }}</div>
+        <div class="mb-2">Total: <span class="font-semibold">${{ Number(paymentOrder?.total || 0).toFixed(2) }}</span></div>
+
+        <label class="block text-sm mb-1">Amount Tendered</label>
+        <input type="number" step="0.01" min="0" v-model.number="tendered" class="w-full border rounded p-2 mb-2" />
+
+        <div class="mb-3 text-sm">
+          Change: <span class="font-semibold">${{ (Number(tendered || 0) - Number(paymentOrder?.total || 0)).toFixed(2) }}</span>
+        </div>
+
+        <div v-if="paymentError" class="text-red-600 text-sm mb-2">{{ paymentError }}</div>
+
+        <div class="flex justify-end gap-2">
+          <button class="px-3 py-1 rounded bg-gray-100" @click="closePaymentModal" :disabled="paymentLoading">Cancel</button>
+          <button class="px-3 py-1 rounded bg-emerald-600 text-white" @click="confirmPayment" :disabled="paymentLoading">{{ paymentLoading ? 'Processing...' : 'Confirm Payment' }}</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-definePageMeta({ middleware: "auth" });
-
 const auth = useAuthStore();
 const pos = usePosStore();
 const route = useRoute();
 const { $api } = useNuxtApp();
 const showCart = ref(false);
 const showOrders = ref(false);
+
+// Payment modal state
+const showPaymentModal = ref(false)
+const paymentOrder = ref<any | null>(null)
+const tendered = ref<number | null>(null)
+const paymentLoading = ref(false)
+const paymentError = ref<string | null>(null)
+
+const openPaymentModal = (order: any) => {
+  paymentOrder.value = order
+  // Prefill tendered amount with order total
+  tendered.value = Number(order.total || 0)
+  paymentError.value = null
+  showPaymentModal.value = true
+}
+
+const closePaymentModal = () => {
+  showPaymentModal.value = false
+  paymentOrder.value = null
+  tendered.value = null
+  paymentError.value = null
+}
+
+const confirmPayment = async () => {
+  if (!paymentOrder.value) return
+  const id = paymentOrder.value._id || paymentOrder.value.id
+  if (!id) return
+
+  const paid = Number(tendered.value || 0)
+  if (Number.isNaN(paid) || paid < Number(paymentOrder.value.total || 0)) {
+    paymentError.value = 'Amount paid must be a number and at least the total amount.'
+    return
+  }
+
+  paymentLoading.value = true
+  paymentError.value = null
+  try {
+    await $api(`/orders/${id}/status`, {
+      method: 'PATCH',
+      body: { status: 'paid', amountPaid: paid }
+    })
+    await pos.fetchActiveOrders?.()
+    closePaymentModal()
+  } catch (e: any) {
+    paymentError.value = e?.data?.message || e?.message || 'Payment failed'
+  } finally {
+    paymentLoading.value = false
+  }
+}
 
 const canPlaceOrder = computed(() => {
   const role = auth.user?.role;
@@ -224,6 +296,13 @@ const updateStatus = async (
 ) => {
   const id = order._id || order.id;
   if (!id) return;
+
+  // If marking as paid, confirm with the cashier to avoid accidental changes
+  if (status === 'paid' && (canCashier.value || (auth.user?.role === 'admin'))) {
+    const ok = confirm(`Mark order #${(id + '').slice(0,6)} as paid?`)
+    if (!ok) return
+  }
+
   try {
     await $api(`/orders/${id}/status`, { method: "PATCH", body: { status } });
     await pos.fetchActiveOrders?.();

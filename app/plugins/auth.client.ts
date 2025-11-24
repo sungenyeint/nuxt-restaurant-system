@@ -1,9 +1,10 @@
 // file: frontend/app/plugins/auth.client.ts
 export default defineNuxtPlugin(async () => {
+  console.log("auth.client");
   const auth = useAuthStore();
-  console.log("token ", auth.token);
   auth.hydrateFromCookie();
 
+console.log("user ", auth.user, 'token ', auth.token);
   if (auth.token && !auth.user) {
     try {
       const config = useRuntimeConfig();
@@ -12,8 +13,6 @@ export default defineNuxtPlugin(async () => {
       });
       auth.user = me;
       auth.isAuthenticated = true;
-      console.log("user ", auth.user);
-      console.log("isAuthenticated ", auth.isAuthenticated);
     } catch {
       auth.logout();
     }

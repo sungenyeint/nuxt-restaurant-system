@@ -1,30 +1,67 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-    <div class="w-full max-w-sm bg-white p-6 rounded shadow">
-      <h1 class="text-xl font-semibold mb-4">Register</h1>
-      <form @submit.prevent="submit">
-        <label class="block mb-2 text-sm">Name</label>
-        <input v-model="name" type="text" required class="w-full border rounded p-2 mb-3" />
-        <label class="block mb-2 text-sm">Email</label>
-        <input v-model="email" type="email" required class="w-full border rounded p-2 mb-3" />
-        <label class="block mb-2 text-sm">Password</label>
-        <input v-model="password" type="password" required class="w-full border rounded p-2 mb-4" />
-        <label class="block mb-2 text-sm">Role</label>
-        <select v-model="role" class="w-full border rounded p-2 mb-6">
-          <option value="cashier">Cashier</option>
-          <option value="admin">Admin</option>
-          <option value="chef">Chef</option>
-          <option value="waiter">Waiter</option>
-        </select>
+  <div class="min-h-screen flex items-center justify-center bg-gray-100 p-6">
+    <div class="w-full max-w-sm bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+      <h1 class="text-2xl font-semibold mb-1 text-center text-teal-600">Restaurant POS</h1>
+      <h2 class="text-lg font-medium mb-6 text-center text-gray-700">Create Account</h2>
 
-        <button class="w-full py-2 rounded bg-green-600 text-white" :disabled="loading">
+      <form @submit.prevent="submit" class="space-y-4">
+        <div>
+          <label class="block mb-1 text-sm text-gray-600">Name</label>
+          <input
+            v-model="name"
+            type="text"
+            required
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          />
+        </div>
+
+        <div>
+          <label class="block mb-1 text-sm text-gray-600">Email</label>
+          <input
+            v-model="email"
+            type="email"
+            required
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          />
+        </div>
+
+        <div>
+          <label class="block mb-1 text-sm text-gray-600">Password</label>
+          <input
+            v-model="password"
+            type="password"
+            required
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          />
+        </div>
+
+        <div>
+          <label class="block mb-1 text-sm text-gray-600">Role</label>
+          <select
+            v-model="role"
+            class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          >
+            <option value="cashier">Cashier</option>
+            <option value="admin">Admin</option>
+            <option value="chef">Chef</option>
+            <option value="waiter">Waiter</option>
+          </select>
+        </div>
+
+        <button
+          class="w-full py-2.5 rounded-lg bg-teal-600 text-white font-medium hover:bg-teal-700 transition disabled:opacity-50"
+          :disabled="loading"
+        >
           {{ loading ? 'Creating account...' : 'Create account' }}
         </button>
-        <p v-if="error" class="text-red-600 text-sm mt-3">{{ error }}</p>
 
-        <div class="text-sm text-gray-600 mt-4">
+        <p v-if="error" class="text-red-600 text-sm text-center">{{ error }}</p>
+
+        <div class="text-sm text-gray-600 text-center mt-4">
           Already have an account?
-          <NuxtLink to="/login" class="text-green-700 hover:underline">Sign in</NuxtLink>
+          <NuxtLink to="/login" class="text-teal-600 font-medium hover:underline">
+            Sign in
+          </NuxtLink>
         </div>
       </form>
     </div>
@@ -45,7 +82,12 @@ const submit = async () => {
   loading.value = true
   error.value = null
   try {
-    await auth.register({ name: name.value, email: email.value, password: password.value, role: role.value })
+    await auth.register({
+      name: name.value,
+      email: email.value,
+      password: password.value,
+      role: role.value
+    })
     await navigateTo('/')
   } catch (e: any) {
     error.value = e?.data?.message || e?.message || 'Registration failed'

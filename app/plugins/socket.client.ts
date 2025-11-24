@@ -33,7 +33,7 @@ export default defineNuxtPlugin(() => {
     const notify = useNotifyStore();
 
     // increment for chef/admin only
-    if (auth.user?.role === "chef" || auth.user?.role === "admin") {
+    if (auth.user?.role === "chef" || (auth.user?.role === "admin" && notify.enabled)) {
       notify.incChef();
       playNewOrderSound();
     }
@@ -49,7 +49,7 @@ export default defineNuxtPlugin(() => {
     const notify = useNotifyStore();
 
     // increment for waiter/admin only
-    if (auth.user?.role === "waiter" || auth.user?.role === "admin") {
+    if (auth.user?.role === "waiter" || (auth.user?.role === "admin" && notify.enabled)) {
       notify.incFinished();
       playNewOrderSound();
     }
@@ -65,7 +65,7 @@ export default defineNuxtPlugin(() => {
     const notify = useNotifyStore();
 
     // increment for chef/admin only
-    if (auth.user?.role === "chef" || auth.user?.role === "admin") {
+    if (auth.user?.role === "chef" || (auth.user?.role === "admin" && notify.enabled)) {
       notify.incChef();
       playNewOrderSound();
     }

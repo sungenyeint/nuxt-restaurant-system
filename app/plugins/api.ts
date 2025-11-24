@@ -4,10 +4,14 @@ export default defineNuxtPlugin(() => {
     baseURL: config.public.apiBase,
     onRequest({ options }) {
       const auth = useAuthStore();
-      options.headers = {
-        ...((options.headers as Record<string, string>) || {}),
+      const existing =
+        options.headers instanceof Headers
+          ? Object.fromEntries(Array.from(options.headers.entries()))
+          : ((options.headers as Record<string, string>) || {});
+      options.headers = new Headers({
+        ...existing,
         ...auth.authHeader(),
-      };
+      });
     },
   });
   return { provide: { api } };
