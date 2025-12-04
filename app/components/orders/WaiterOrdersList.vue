@@ -1,33 +1,24 @@
 <template>
   <div class="space-y-6">
     <!-- Dine-in grouped by table -->
-    <div>
-      <div class="text-xs uppercase text-gray-500 mb-2">Dine-in</div>
+    <div class="rounded-lg shadow p-4 bg-white">
+      <div class="text-md uppercase font-semibold text-gray-500 mb-2 border-b pb-2">Dine-in</div>
       <div v-if="grouped.dine.length === 0" class="text-gray-500">
         No dine-in orders.
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div
-          v-for="grp in grouped.dine"
-          :key="grp.tableKey"
-          class="bg-white rounded shadow p-4"
-        >
+        <div v-for="grp in grouped.dine" :key="grp.tableKey" class="bg-white rounded shadow p-4">
           <div class="font-semibold mb-2">
             Table {{ grp.tableNumber || "—" }}
           </div>
           <div class="space-y-2">
-            <div
-              v-for="o in grp.orders"
-              :key="o._id || o.id"
-              class="border rounded p-2"
-            >
+            <div v-for="o in grp.orders" :key="o._id || o.id"
+              class="p-4 relative transition-all duration-300"
+              :class="{ 'flash-card': isFlashing(o) }">
               <div class="flex justify-between items-center">
                 <div class="font-mono text-xs">#{{ shortId(o) }}</div>
-                <span
-                  class="text-xs px-2 py-0.5 rounded capitalize"
-                  :class="statusClass(o.status)"
-                  >{{ o.status }}</span
-                >
+                <span class="text-xs px-2 py-0.5 rounded capitalize" :class="orderStatusClass(o.status)">{{ o.status
+                }}</span>
               </div>
               <!-- Notes (special instructions) -->
               <div v-if="o.notes" class="mt-2 p-2 rounded bg-red-100 text-red-800 text-xs">
@@ -43,11 +34,7 @@
                   <div class="col-span-3 text-right">Total</div>
                 </div>
 
-                <div
-                  v-for="(it, idx) in o.items || []"
-                  :key="idx"
-                  class="grid grid-cols-12 gap-2 py-1 text-xs"
-                >
+                <div v-for="(it, idx) in o.items || []" :key="idx" class="grid grid-cols-12 gap-2 py-1 text-xs">
                   <div class="col-span-6 text-gray-800 truncate">
                     {{ idx + 1 }}. {{ it.menu?.name || it.name }}
                   </div>
@@ -66,16 +53,20 @@
                     Number(o.total || 0).toFixed(2)
                   }}
                 </div>
+                <div class="flex gap-2 float-end mt-4">
+                  <button v-if="o.status === 'pending'"
+                    class="px-3 py-1 rounded bg-blue-600 text-white hover:bg-emerald-700"
+                    @click="$emit('edit-pending', o)">
+                    Edit
+                  </button>
+                  <button v-else-if="o.status === 'ready'"
+                    class="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700"
+                    @click="$emit('update-status', o, 'served')">
+                    Ready to Serve
+                  </button>
+                </div>
               </div>
-              <div class="mt-2 flex gap-2">
-                <button
-                  v-if="o.status === 'pending'"
-                  class="px-2 py-1 text-sm rounded bg-gray-200 hover:bg-gray-300"
-                  @click="$emit('edit-pending', o)"
-                >
-                  Edit
-                </button>
-              </div>
+
             </div>
           </div>
         </div>
@@ -83,24 +74,17 @@
     </div>
 
     <!-- Takeaway -->
-    <div>
-      <div class="text-xs uppercase text-gray-500 mb-2">Takeaway</div>
+    <div class="rounded-lg shadow p-4 bg-white">
+      <div class="text-md uppercase font-semibold text-gray-500 mb-2 border-b pb-2">Takeaway</div>
       <div v-if="grouped.takeaway.length === 0" class="text-gray-500">
         No takeaway orders.
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div
-          v-for="o in grouped.takeaway"
-          :key="o._id || o.id"
-          class="bg-white rounded shadow p-4"
-        >
+        <div v-for="o in grouped.takeaway" :key="o._id || o.id"
+          class="p-4 rounded-lg shadow relative transition-all duration-300" :class="{ 'flash-card': isFlashing(o) }">
           <div class="flex justify-between items-center">
             <div class="font-mono text-xs">#{{ shortId(o) }}</div>
-            <span
-              class="text-xs px-2 py-0.5 rounded capitalize"
-              :class="statusClass(o.status)"
-              >{{ o.status }}</span
-            >
+            <span class="text-xs px-2 py-0.5 rounded capitalize" :class="orderStatusClass(o.status)">{{ o.status }}</span>
           </div>
           <!-- Notes (special instructions) -->
           <div v-if="o.notes" class="mt-2 p-2 rounded bg-red-100 text-red-800 text-xs">
@@ -116,11 +100,7 @@
               <div class="col-span-3 text-right">Total</div>
             </div>
 
-            <div
-              v-for="(it, idx) in o.items || []"
-              :key="idx"
-              class="grid grid-cols-12 gap-2 py-1 text-xs"
-            >
+            <div v-for="(it, idx) in o.items || []" :key="idx" class="grid grid-cols-12 gap-2 py-1 text-xs">
               <div class="col-span-6 text-gray-800 truncate">
                 {{ idx + 1 }}. {{ it.menu?.name || it.name }}
               </div>
@@ -140,13 +120,15 @@
               }}
             </div>
           </div>
-          <div class="mt-2 flex gap-2 justify-end">
-            <button
-              v-if="o.status === 'pending'"
-              class="px-4 py-1 text-sm rounded bg-gray-200 hover:bg-gray-300"
-              @click="$emit('edit-pending', o)"
-            >
+          <div class="flex gap-2 float-end mt-4">
+            <button v-if="o.status === 'pending'" class="px-3 py-1 rounded bg-blue-600 text-white hover:bg-emerald-700"
+              @click="$emit('edit-pending', o)">
               Edit
+            </button>
+            <button v-else-if="o.status === 'ready'"
+              class="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700"
+              @click="$emit('update-status', o, 'served')">
+              Ready to Serve
             </button>
           </div>
         </div>
@@ -156,7 +138,11 @@
 </template>
 
 <script setup lang="ts">
+const { orderStatusClass } = await import('@/constants/utils');
 const props = defineProps<{ orders: any[] }>();
+const auth = useAuthStore();
+const notify = useNotifyStore();
+
 const dine = computed(() =>
   props.orders.filter((o) => o.orderType === "dine-in")
 );
@@ -180,16 +166,11 @@ const grouped = computed(() => ({
   dine: groupByTable(dine.value),
   takeaway: takeaway.value,
 }));
+const { isFlashing } = useOrderFlash(
+  (computed(() => [...dine.value, ...takeaway.value])),
+  notify,
+  auth.user?.role
+);
 const shortId = (o: any) => (o._id || o.id)?.slice?.(0, 6) || o._id || o.id;
-const statusClass = (s: string) =>
-  s === "pending"
-    ? "bg-yellow-100 text-yellow-800"
-    : s === "preparing"
-    ? "bg-blue-100 text-blue-800"
-    : s === "ready"
-    ? "bg-purple-100 text-purple-800"
-    : s === "served"
-    ? "bg-green-100 text-green-800"
-    : "bg-gray-100 text-gray-800";
-defineEmits(["edit-pending"]);
+defineEmits(["edit-pending", "update-status"]);
 </script>

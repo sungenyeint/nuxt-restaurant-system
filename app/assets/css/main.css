@@ -1,3 +1,59 @@
 body {
   font-family: 'Poppins', sans-serif;
 }
+
+@keyframes slideShakeGlow {
+  0% {
+  transform: translateX(-4px) scale(1);
+  background-color: #ffe4e6;
+  box-shadow: 0 0 2px rgba(255, 0, 0, 0.2);
+  }
+  20% {
+  transform: translateX(0) scale(1.02);
+  box-shadow: 0 0 6px rgba(255, 0, 0, 0.35);
+  }
+  40% {
+  transform: translateX(-4px) scale(1.03);
+  }
+  60% {
+  transform: translateX(4px) scale(1.03);
+  }
+  80% {
+  transform: translateX(0);
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+  }
+  100% {
+  transform: translateX(0);
+  }
+}
+
+.flash-card {
+  animation: slideShakeGlow 0.8s ease-out 3;
+  border-left: 4px solid #ef4444;
+}
+
+@keyframes heartbeat {
+  0% {
+    transform: scale(1);
+  }
+  10% {
+    transform: scale(1.12);
+  }
+  20% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.12);
+  }
+  40% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Register it as a Tailwind utility */
+.animate-heartbeat {
+  animation: heartbeat 1.2s ease-in-out infinite;
+}

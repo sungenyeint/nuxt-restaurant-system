@@ -1,18 +1,32 @@
 <template>
-  <div>
+  <div class="p-6">
     <h2 class="text-xl font-semibold mb-4">Tables</h2>
+
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex gap-2">
+        <button
+          v-for="tab in tabs"
+          :key="tab.key"
+          @click="active = tab.key as any"
+          class="px-3 py-1 rounded text-sm border"
+          :class="active === tab.key ? 'bg-teal-700 text-white' : 'hover:bg-teal-100'
+          "
+        >
+          {{ tab.label }}
+        </button>
+      </div>
+
+      <div>
+        <input v-model="q" placeholder="Search tables..." class="border rounded px-3 py-1 text-sm" />
+      </div>
+    </div>
 
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
       <div
-        v-for="t in tables"
+        v-for="t in pos.tables.filter(matchesFilter)"
         :key="t._id"
         class="rounded-lg p-4 border shadow-sm transition"
-        :class="[
-          t.status === 'available' ? 'bg-green-50 border-green-200' : '',
-          t.status === 'occupied' ? 'bg-red-50 border-red-200' : '',
-          t.status === 'reserved' ? 'bg-yellow-50 border-yellow-200' : '',
-          t.status === 'cleaning' ? 'bg-blue-50 border-blue-200' : ''
-        ]"
+        :class="tableStatusClass(t.status)"
       >
         <div class="flex items-start justify-between">
           <div>
@@ -73,12 +87,36 @@
 <script setup lang="ts">
 definePageMeta({ middleware: 'waiter' })
 const { $api } = useNuxtApp()
-const tables = ref<any[]>([])
+import { ref } from 'vue'
+import { tableStatusClass } from '~/constants/utils';
+const pos = usePosStore();
+const tabs = [
+  { key: 'all', label: 'All' },
+  { key: 'available', label: 'Available' },
+  { key: 'occupied', label: 'Occupied' },
+  { key: 'reserved', label: 'Reserved' },
+  { key: 'cleaning', label: 'Cleaning' },
+]
+const active = ref<'all'|'available'|'occupied'|'reserved'|'cleaning'>('all')
+const q = ref('')
 
-const load = async () => { tables.value = await $api('/tables') }
+// const load = async () => { tables.value = await $api('/tables') }
 const setStatus = async (t:any, status:'available'|'occupied'|'cleaning'|'reserved') => {
-  await $api(`/tables/${t._id}`, { method: 'PUT', body: { ...t, status } })
-  await load()
+  await $api(`/tables/${t._id}/status`, { method: 'PATCH', body: { status : status } });
+  await pos.fetchTables();
 }
-onMounted(load)
+
+const matchesFilter = (t:any) => {
+  if (active.value !== 'all' && t.status !== active.value) return false
+  const qv = (q.value || '').toString().trim().toLowerCase()
+  if (!qv) return true
+  // match table number or seats
+  if ((t.tableNumber || '').toString().toLowerCase().includes(qv)) return true
+  if ((t.seats || '').toString().toLowerCase().includes(qv)) return true
+  return false
+}
+
+// const filteredTables = computed(() => pos.tables.filter(matchesFilter))
+
+onMounted(() => pos.fetchTables())
 </script>

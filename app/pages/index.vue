@@ -2,60 +2,62 @@
 <template>
   <div class="h-screen flex flex-col">
     <!-- Header -->
-    <div class="bg-gradient-to-r from-teal-600 to-indigo-700 text-white shadow-md">
+    <div class="bg-white border-b">
       <div class="mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
-          <h1 class="text-2xl font-bold">POS Dashboard</h1>
+          <h1 class="text-2xl font-semibold text-gray-800">POS Dashboard</h1>
           <!-- Header right controls (hidden for chef) -->
           <div class="flex items-center space-x-4" v-if="canPlaceOrder">
-          <!-- Order type toggle -->
-            <div class="flex rounded overflow-hidden bg-white/10 p-1">
-              <button
-                class="px-3 py-1.5 text-sm rounded"
-                :class="
-                  pos.currentOrder.orderType === 'dine-in'
-                    ? 'bg-white text-teal-700 font-semibold'
-                    : 'text-white/90'
-                "
-                @click="pos.setOrderType('dine-in')"
-              >
+            <!-- Order type toggle -->
+            <div class="flex rounded overflow-hidden bg-gray-100 p-1">
+              <button class="px-3 py-1.5 text-sm rounded" :class="pos.currentOrder.orderType === 'dine-in'
+                  ? 'bg-white text-sky-700 font-semibold'
+                  : 'text-gray-700'
+                " @click="pos.setOrderType('dine-in')">
                 Dine-in
               </button>
-              <button
-                class="px-3 py-1.5 text-sm rounded"
-                :class="
-                  pos.currentOrder.orderType === 'takeaway'
-                    ? 'bg-white text-teal-700 font-semibold'
-                    : 'text-white/90'
-                "
-                @click="pos.setOrderType('takeaway')"
-              >
+              <button class="px-3 py-1.5 text-sm rounded" :class="pos.currentOrder.orderType === 'takeaway'
+                  ? 'bg-white text-sky-700 font-semibold'
+                  : 'text-gray-700'
+                " @click="pos.setOrderType('takeaway')">
                 Takeaway
               </button>
             </div>
 
             <button
               v-if="canPlaceOrder"
-              class="px-3 py-1.5 rounded bg-white text-teal-700 font-semibold shadow-md hover:scale-105 transition-transform"
+              class="relative px-3 py-1.5 rounded bg-sky-600 text-white font-semibold transition hover:bg-sky-700"
+              :class="{
+                'opacity-50 cursor-not-allowed': pos.cartItemCount === 0,
+                'animate-heartbeat shadow-xl ring-2 ring-sky-300': pos.cartItemCount > 0
+              }"
+              :disabled="pos.cartItemCount === 0"
               @click="showCart = true"
             >
-              Cart ({{ pos.cartItemCount }})
+              Cart
+
+              <span
+                v-if="pos.cartItemCount > 0"
+                class="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-2 py-0.5 rounded-full"
+              >
+                {{ pos.cartItemCount }}
+              </span>
             </button>
 
-            <button
-              v-if="canViewOrders"
-              class="px-3 py-1.5 rounded bg-white/20 text-white/95 hover:bg-white/30 transition"
-              @click="showOrders = true"
-            >
+
+
+            <button v-if="canViewOrders"
+              class="px-3 py-1.5 rounded bg-gray-100 text-gray-800 hover:bg-gray-200 transition"
+              @click="showOrders = true">
               Active Orders
             </button>
-        </div>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Main Content -->
-    <div class="flex-1 grid grid-cols-4 gap-6 p-6">
+    <div class="flex-1 grid grid-cols-4 gap-6 p-6 bg-gray-50">
       <!-- Tables Section -->
       <div class="col-span-1">
         <TablesSection v-if="canPlaceOrder" @select-table="pos.setTable" />
@@ -69,23 +71,17 @@
 
     <!-- Cart Panel (slideover-like) -->
     <div v-if="showCart" class="fixed inset-0 bg-black/40 flex justify-end">
-      <div class="w-full max-w-md h-full bg-white shadow-xl">
-        <CartPanel
-          @close="showCart = false"
-          @submit-order="handleSubmitOrder"
-        />
+      <div class="w-full max-w-md h-full bg-white">
+        <CartPanel @close="showCart = false" @submit-order="handleSubmitOrder" />
       </div>
     </div>
 
     <!-- Active Orders Panel -->
     <div v-if="showOrders" class="fixed inset-0 bg-black/40 flex justify-end">
-      <div class="w-full max-w-md h-full bg-white shadow-xl p-6 flex flex-col">
+      <div class="w-full max-w-md h-full bg-white p-6 flex flex-col">
         <div class="flex justify-between items-center border-b pb-3">
           <h2 class="text-lg font-semibold">Active Orders</h2>
-          <button
-            class="text-gray-600 hover:text-gray-900"
-            @click="showOrders = false"
-          >
+          <button class="text-gray-600 hover:text-gray-900" @click="showOrders = false">
             ✕
           </button>
         </div>
@@ -93,15 +89,17 @@
           <div v-if="pos.activeOrders.length === 0" class="text-gray-500">
             No active orders yet.
           </div>
-          <div
-            v-for="order in pos.activeOrders"
-            :key="order._id || order.id"
-            class="border rounded p-3"
-          >
-            <div class="text-sm text-gray-600">
-              #{{
+          <div v-for="order in pos.activeOrders" :key="order._id || order.id" class="border rounded p-3">
+            <div class="flex justify-between items-center mb-2">
+              <div class="font-mono text-xs">#{{
                 (order._id || order.id).slice?.(0, 6) || order._id || order.id
-              }}
+              }}</div>
+              <div class="flex items-center gap-2">
+                <!-- Status Badge -->
+                <span class="text-xs px-2 py-0.5 rounded font-medium capitalize" :class="orderStatusClass(order.status)">
+                  {{ order.status }}
+                </span>
+              </div>
             </div>
             <div class="font-medium">
               {{
@@ -110,48 +108,49 @@
                   : "takeaway"
               }}
             </div>
-            <div class="text-sm">
+            <!-- <div class="text-sm">
               Items: {{ order.items?.length || 0 }} • Total: ${{
                 Number(order.total || 0).toFixed(2)
               }}
+            </div> -->
+            <div v-for="(it, idx) in order.items || []" :key="idx" class="grid grid-cols-12 gap-2 py-1 text-xs">
+              <div class="col-span-6 text-gray-800 truncate">
+                {{ idx + 1 }}. {{ it.menu?.name || it.name }}
+              </div>
+              <div class="col-span-2 text-right">
+                ${{ Number(it.menu?.price ?? it.price ?? 0).toFixed(2) }}
+              </div>
+              <div class="col-span-1 text-right">
+                {{ it.qty }}
+              </div>
+              <div class="col-span-3 text-right font-medium">
+                ${{ Number((it.menu?.price ?? it.price ?? 0) * (it.qty ?? 1)).toFixed(2) }}
+              </div>
             </div>
-            <div class="text-xs text-gray-500 capitalize">
-              Status: {{ order.status }}
+            <div class="text-right text-sm font-medium mt-2 border-t pt-2">
+              Total : ${{
+                Number(order.total || 0).toFixed(2)
+              }}
             </div>
-            <div
-              class="mt-3 flex items-center justify-between text-sm border-t pt-3"
-            >
-              <span class="text-gray-600"
-                >Items: {{ order.items?.length || 0 }}</span
-              >
+            <div class="mt-3 flex items-center justify-end text-sm border-t pt-3">
               <div class="flex items-center gap-2">
-                <button
-                  v-if="canChef && order.status === 'pending'"
+                <button v-if="canChef && order.status === 'pending'"
                   class="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
-                  @click="updateStatus(order, 'preparing')"
-                >
+                  @click="updateStatus(order, 'preparing')">
                   Start Preparing
                 </button>
-                <button
-                  v-else-if="canChef && order.status === 'preparing'"
+                <button v-else-if="canChef && order.status === 'preparing'"
                   class="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700"
-                  @click="updateStatus(order, 'served')"
-                >
+                  @click="updateStatus(order, 'served')">
                   Mark Served
                 </button>
-                <button
-                  v-if="
-                    canCashier &&
-                    (order.status === 'served' || order.status === 'ready')
-                  "
-                  class="px-3 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700"
-                  @click="openPaymentModal(order)"
-                >
+                <button v-if="
+                  canCashier &&
+                  (order.status === 'served' || order.status === 'ready')
+                " class="px-3 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700"
+                  @click="openPaymentModal(order)">
                   Mark Paid
                 </button>
-                <span class="font-semibold"
-                  >${{ Number(order.total || 0).toFixed(2) }}</span
-                >
               </div>
             </div>
           </div>
@@ -163,21 +162,26 @@
     <div v-if="showPaymentModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div class="w-full max-w-md bg-white rounded shadow p-6">
         <h3 class="text-lg font-semibold mb-3">Process Payment</h3>
-        <div class="mb-2 text-sm text-gray-700">Order #{{ (paymentOrder?._id || paymentOrder?.id)?.toString().slice?.(0,6) }}</div>
-        <div class="mb-2">Total: <span class="font-semibold">${{ Number(paymentOrder?.total || 0).toFixed(2) }}</span></div>
+        <div class="mb-2 text-sm text-gray-700">Order #{{ (paymentOrder?._id ||
+          paymentOrder?.id)?.toString().slice?.(0,6) }}</div>
+        <div class="mb-2">Total: <span class="font-semibold">${{ Number(paymentOrder?.total || 0).toFixed(2) }}</span>
+        </div>
 
         <label class="block text-sm mb-1">Amount Tendered</label>
         <input type="number" step="0.01" min="0" v-model.number="tendered" class="w-full border rounded p-2 mb-2" />
 
         <div class="mb-3 text-sm">
-          Change: <span class="font-semibold">${{ (Number(tendered || 0) - Number(paymentOrder?.total || 0)).toFixed(2) }}</span>
+          Change: <span class="font-semibold">${{ (Number(tendered || 0) - Number(paymentOrder?.total || 0)).toFixed(2)
+            }}</span>
         </div>
 
         <div v-if="paymentError" class="text-red-600 text-sm mb-2">{{ paymentError }}</div>
 
         <div class="flex justify-end gap-2">
-          <button class="px-3 py-1 rounded bg-gray-100" @click="closePaymentModal" :disabled="paymentLoading">Cancel</button>
-          <button class="px-3 py-1 rounded bg-emerald-600 text-white" @click="confirmPayment" :disabled="paymentLoading">{{ paymentLoading ? 'Processing...' : 'Confirm Payment' }}</button>
+          <button class="px-3 py-1 rounded bg-gray-100" @click="closePaymentModal"
+            :disabled="paymentLoading">Cancel</button>
+          <button class="px-3 py-1 rounded bg-emerald-600 text-white" @click="confirmPayment"
+            :disabled="paymentLoading">{{ paymentLoading ? 'Processing...' : 'Confirm Payment' }}</button>
         </div>
       </div>
     </div>
@@ -185,6 +189,8 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeRouteLeave } from 'vue-router'
+const { orderStatusClass } = await import('@/constants/utils');
 const auth = useAuthStore();
 const pos = usePosStore();
 const route = useRoute();
@@ -198,6 +204,15 @@ const paymentOrder = ref<any | null>(null)
 const tendered = ref<number | null>(null)
 const paymentLoading = ref(false)
 const paymentError = ref<string | null>(null)
+
+onBeforeRouteLeave((to, from) => {
+  if (pos.cartItemCount > 0) {
+    const leave = confirm(
+      'You have items in your cart. Are you sure you want to leave this page?'
+    )
+    if (!leave) return false
+  }
+})
 
 const openPaymentModal = (order: any) => {
   paymentOrder.value = order
@@ -232,7 +247,7 @@ const confirmPayment = async () => {
       method: 'PATCH',
       body: { status: 'paid', amountPaid: paid }
     })
-    await pos.fetchActiveOrders?.()
+    await pos.fetchOrders?.()
     closePaymentModal()
   } catch (e: any) {
     paymentError.value = e?.data?.message || e?.message || 'Payment failed'
@@ -278,10 +293,15 @@ onMounted(async () => {
   pos.loadInitialData();
   const editId = route.query.editOrder as string | undefined;
   if (editId) {
+    // Load order into POS
     await pos.loadOrder(editId);
     showCart.value = true;
-    // Optional: clear the query to avoid re-trigger on back/forward
-    // navigateTo('/', { replace: true })
+
+    // Remove query param from URL
+    navigateTo('/', { replace: true });
+  } else {
+    // No query, ensure current order is cleared
+    pos.clearCurrentOrder?.();
   }
 });
 
@@ -299,13 +319,13 @@ const updateStatus = async (
 
   // If marking as paid, confirm with the cashier to avoid accidental changes
   if (status === 'paid' && (canCashier.value || (auth.user?.role === 'admin'))) {
-    const ok = confirm(`Mark order #${(id + '').slice(0,6)} as paid?`)
+    const ok = confirm(`Mark order #${(id + '').slice(0, 6)} as paid?`)
     if (!ok) return
   }
 
   try {
     await $api(`/orders/${id}/status`, { method: "PATCH", body: { status } });
-    await pos.fetchActiveOrders?.();
+    await pos.fetchOrders?.();
   } catch (e) {
     // noop
   }
@@ -323,4 +343,5 @@ const handleSubmitOrder = async () => {
     // handle error
   }
 };
+
 </script>

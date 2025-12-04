@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <h2 class="text-xl font-semibold mb-4">Categories</h2>
+  <div class="p-6">
+    <h2 class="text-xl font-semibold mb-4">Manage Categories</h2>
 
     <form class="flex gap-4 mb-4" @submit.prevent="save">
       <input
@@ -13,7 +13,7 @@
         class="border rounded p-2"
         placeholder="Description"
       />
-      <button class="px-3 py-2 rounded bg-green-600 text-white">
+      <button class="px-3 py-2 rounded bg-blue-600 text-white">
         {{ form._id ? "Update" : "Create" }}
       </button>
       <button
@@ -69,16 +69,21 @@ const reset = () =>
 const edit = (c: any) => Object.assign(form, c);
 
 const save = async () => {
-  if (form._id)
+  if (form._id) {
     await $api(`/categories/${form._id}`, { method: "PUT", body: form });
-  else await $api("/categories", { method: "POST", body: form });
+    alert('Category updated successfully');
+  } else {
+    await $api("/categories", { method: "POST", body: form });
+    alert('Category created successfully');
+  }
   reset();
   await load();
 };
 
 const remove = async (id: string) => {
-  if (!confirm("Delete?")) return;
+  if (!confirm("Are you sure want to delete this category?")) return;
   await $api(`/categories/${id}`, { method: "DELETE" });
+  alert('Category deleted successfully');
   await load();
 };
 

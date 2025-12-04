@@ -1,40 +1,23 @@
 <template>
-  <div>
-    <h2 class="text-xl font-semibold mb-4">Users</h2>
+  <div class="p-6">
+
+    <h2 class="text-xl font-semibold mb-4">Manage Users</h2>
 
     <form class="grid grid-cols-4 gap-4 mb-4" @submit.prevent="save">
-      <input
-        v-model="form.name"
-        class="border rounded p-2"
-        placeholder="Name"
-      />
-      <input
-        v-model="form.email"
-        type="email"
-        class="border rounded p-2"
-        placeholder="Email"
-      />
-      <input
-        v-model="form.password"
-        type="password"
-        class="border rounded p-2"
-        placeholder="Password (optional on edit)"
-      />
+      <input v-model="form.name" class="border rounded p-2" placeholder="Name" />
+      <input v-model="form.email" type="email" class="border rounded p-2" placeholder="Email" />
+      <input v-model="form.password" type="password" class="border rounded p-2"
+        placeholder="Password (optional on edit)" />
       <select v-model="form.role" class="border rounded p-2">
         <option value="cashier">cashier</option>
         <option value="admin">admin</option>
         <option value="chef">chef</option>
         <option value="waiter">waiter</option>
       </select>
-      <button class="px-3 py-2 rounded bg-green-600 text-white">
+      <button class="px-3 py-2 rounded bg-blue-600 text-white">
         {{ form._id ? "Update" : "Create" }}
       </button>
-      <button
-        v-if="form._id"
-        type="button"
-        class="px-3 py-2 rounded bg-gray-200"
-        @click="reset"
-      >
+      <button v-if="form._id" type="button" class="px-3 py-2 rounded bg-gray-200" @click="reset">
         Cancel
       </button>
     </form>
@@ -57,10 +40,7 @@
             <button class="px-2 py-1 bg-gray-200 rounded" @click="edit(u)">
               Edit
             </button>
-            <button
-              class="px-2 py-1 bg-red-600 text-white rounded"
-              @click="remove(u._id)"
-            >
+            <button class="px-2 py-1 bg-red-600 text-white rounded" @click="remove(u._id)">
               Delete
             </button>
           </td>
@@ -105,15 +85,20 @@ const edit = (u: any) =>
 const save = async () => {
   const payload: any = { name: form.name, email: form.email, role: form.role };
   if (form.password) payload.password = form.password;
-  if (form._id)
+  if (form._id) {
     await $api(`/users/${form._id}`, { method: "PUT", body: payload });
-  else await $api("/users", { method: "POST", body: payload });
+    alert('User updated successfully');
+  } else {
+    await $api("/users", { method: "POST", body: payload });
+    alert('User created successfully');
+  }
   reset();
   await load();
 };
 const remove = async (id: string) => {
-  if (!confirm("Delete?")) return;
+  if (!confirm("Are you sure want to delete this user?")) return;
   await $api(`/users/${id}`, { method: "DELETE" });
+  alert('User deleted successfully');
   await load();
 };
 onMounted(load);

@@ -1,24 +1,80 @@
 import { defineStore } from "pinia";
+import waiter from "~/middleware/waiter";
 
 export const useNotifyStore = defineStore("notify", {
   state: () => ({
-    chefNewOrders: 0,
-    chefFinishedOrders: 0,
+    // notifications counters per role
+    waiterCount: 0,
+    chefCount: 0,
+    cashierCount: 0,
+    adminCount: 0,
+    waiterLastId: [] as string[],
+    chefLastId: [] as string[],
+    cashierLastId: [] as string[],
+    adminLastId: [] as string[],
     // whether to show/receive notifications (admin can toggle)
     enabled: true,
   }),
   actions: {
-    incChef(n = 1) {
-      this.chefNewOrders += n;
+    sendChef(n = 1) {
+      this.chefCount += n;
     },
     clearChef() {
-      this.chefNewOrders = 0;
+      this.chefCount = 0;
     },
-    incFinished(n = 1) {
-      this.chefFinishedOrders += n;
+    sendWaiter(n = 1) {
+      this.waiterCount += n;
     },
-    clearFinished() {
-      this.chefFinishedOrders = 0;
+    clearWaiter() {
+      this.waiterCount = 0;
+    },
+    sendCashier(n = 1) {
+      this.cashierCount += n;
+    },
+    clearCashier() {
+      this.cashierCount = 0;
+    },
+    sendAdmin(n = 1) {
+      this.adminCount += n;
+    },
+    clearAdmin() {
+      this.adminCount = 0;
+    },
+    setWaiterLastId(id: string) {
+      if (!this.waiterLastId.includes(id)) {
+        this.waiterLastId.unshift(id);   // push to beginning
+        this.waiterLastId = this.waiterLastId.slice(0, 50); // keep last 50
+      }
+    },
+    setChefLastId(id: string) {
+      if (!this.chefLastId.includes(id)) {
+        this.chefLastId.unshift(id);   // push to beginning
+        this.chefLastId = this.chefLastId.slice(0, 50); // keep last 50
+      }
+    },
+    setCashierLastId(id: string) {
+      if (!this.cashierLastId.includes(id)) {
+        this.cashierLastId.unshift(id);   // push to beginning
+        this.cashierLastId = this.cashierLastId.slice(0, 50); // keep last 50
+      }
+    },
+    setAdminLastId(id: string) {
+      if (!this.adminLastId.includes(id)) {
+        this.adminLastId.unshift(id);   // push to beginning
+        this.adminLastId = this.adminLastId.slice(0, 50); // keep last 50
+      }
+    },
+    removeWaiterLastId(id: string) {
+      this.waiterLastId = this.waiterLastId.filter((i) => i !== id);
+    },
+    removeChefLastId(id: string) {
+      this.chefLastId = this.chefLastId.filter((i) => i !== id);
+    },
+    removeCashierLastId(id: string) {
+      this.cashierLastId = this.cashierLastId.filter((i) => i !== id);
+    },
+    removeAdminLastId(id: string) {
+      this.adminLastId = this.adminLastId.filter((i) => i !== id);
     },
     setEnabled(val: boolean) {
       this.enabled = !!val;

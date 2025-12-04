@@ -18,6 +18,7 @@ export const usePosStore = defineStore("pos", {
     categories: [] as Array<any>,
     menus: [] as Array<any>,
     tables: [] as Array<any>,
+    orders: [] as Array<any>,
     activeOrders: [] as Array<any>,
     selectedTable: null as any,
     editingOrderId: null as string | null,
@@ -44,7 +45,7 @@ export const usePosStore = defineStore("pos", {
         this.fetchCategories(),
         this.fetchMenus(),
         this.fetchTables(),
-        this.fetchActiveOrders(),
+        this.fetchOrders(),
       ]);
     },
 
@@ -69,13 +70,16 @@ export const usePosStore = defineStore("pos", {
       this.tables = data;
     },
 
-    async fetchActiveOrders() {
+    async fetchOrders() {
       const api = useRuntimeConfig().public.apiBase;
       const auth = useAuthStore();
-      const orders: any = await $fetch(`${api}/orders/active`, {
+      const orders: any = await $fetch(`${api}/orders`, {
         headers: { ...auth.authHeader() },
       });
-      this.activeOrders = orders;
+      this.activeOrders = orders.filter((o: any) =>
+        o.status !== "paid"
+      );
+      this.orders = orders;
     },
 
     setOrderType(type: 'dine-in' | 'takeaway') {
@@ -150,20 +154,20 @@ export const usePosStore = defineStore("pos", {
       });
 
       this.clearCurrentOrder();
-      await this.fetchActiveOrders();
+      await this.fetchOrders();
       return order;
     },
     async loadOrder(orderId: string) {
       this.editingOrderId = orderId;
       // Ensure we have fresh active orders
       if (!this.activeOrders?.length) {
-        await this.fetchActiveOrders()
+        await this.fetchOrders()
       }
       let order = this.activeOrders.find((o: any) => (o._id || o.id) === orderId)
 
       // If not found, try refreshing once
       if (!order) {
-        await this.fetchActiveOrders()
+        await this.fetchOrders()
         order = this.activeOrders.find((o: any) => (o._id || o.id) === orderId)
       }
       if (!order) return

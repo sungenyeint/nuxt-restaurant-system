@@ -1,35 +1,21 @@
 <template>
-  <div>
-    <h2 class="text-xl font-semibold mb-4">Tables</h2>
+  <div class="p-6">
+
+    <h2 class="text-xl font-semibold mb-4">Manage Tables</h2>
 
     <form class="grid grid-cols-4 gap-4 mb-4" @submit.prevent="save">
-      <input
-        v-model.number="form.tableNumber"
-        type="number"
-        class="border rounded p-2"
-        placeholder="Table #"
-      />
-      <input
-        v-model.number="form.seats"
-        type="number"
-        class="border rounded p-2"
-        placeholder="Seats"
-      />
+      <input v-model.number="form.tableNumber" type="number" class="border rounded p-2" placeholder="Table #" />
+      <input v-model.number="form.seats" type="number" class="border rounded p-2" placeholder="Seats" />
       <select v-model="form.status" class="border rounded p-2">
         <option value="available">available</option>
         <option value="occupied">occupied</option>
         <option value="reserved">reserved</option>
         <option value="cleaning">cleaning</option>
       </select>
-      <button class="px-3 py-2 rounded bg-green-600 text-white">
+      <button class="px-3 py-2 rounded bg-blue-600 text-white">
         {{ form._id ? "Update" : "Create" }}
       </button>
-      <button
-        v-if="form._id"
-        type="button"
-        class="px-3 py-2 rounded bg-gray-200"
-        @click="reset"
-      >
+      <button v-if="form._id" type="button" class="px-3 py-2 rounded bg-gray-200" @click="reset">
         Cancel
       </button>
     </form>
@@ -52,10 +38,7 @@
             <button class="px-2 py-1 bg-gray-200 rounded" @click="edit(t)">
               Edit
             </button>
-            <button
-              class="px-2 py-1 bg-red-600 text-white rounded"
-              @click="remove(t._id)"
-            >
+            <button class="px-2 py-1 bg-red-600 text-white rounded" @click="remove(t._id)">
               Delete
             </button>
           </td>
@@ -93,15 +76,20 @@ const save = async () => {
     seats: Number(form.seats),
     status: form.status,
   };
-  if (form._id)
+  if (form._id) {
     await $api(`/tables/${form._id}`, { method: "PUT", body: payload });
-  else await $api("/tables", { method: "POST", body: payload });
+    alert('Table updated successfully');
+  } else {
+    await $api("/tables", { method: "POST", body: payload });
+    alert('Table created successfully');
+  }
   reset();
   await load();
 };
 const remove = async (id: string) => {
-  if (!confirm("Delete?")) return;
+  if (!confirm("Are you sure want to delete this table?")) return;
   await $api(`/tables/${id}`, { method: "DELETE" });
+  alert('Table deleted successfully');
   await load();
 };
 onMounted(load);

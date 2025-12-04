@@ -2,12 +2,10 @@
 import ChefOrdersList from "~/components/orders/ChefOrdersList.vue";
 import WaiterOrdersList from "~/components/orders/WaiterOrdersList.vue";
 import CashierOrdersList from "~/components/orders/CashierOrdersList.vue";
-import { all } from "axios";
 
 const { $api } = useNuxtApp();
-const active_orders = ref<any[]>([]);
-const all_orders = ref<any[]>([]);
 const auth = useAuthStore();
+const pos = usePosStore();
 const canChef = computed(
   () => auth.user?.role === "chef" || auth.user?.role === "admin"
 );
@@ -19,7 +17,7 @@ const canCashier = computed(
 );
 
 // View mode: 'chef' | 'waiter' | 'cashier'. Default based on actual role.
-const defaultMode = auth.user?.role === 'waiter' ? 'waiter' : auth.user?.role === 'cashier' ? 'cashier' : 'chef'
+const defaultMode = auth.user?.role === 'chef' ? 'chef' : auth.user?.role === 'cashier' ? 'cashier' : 'waiter'
 const viewMode = ref<string>(defaultMode)
 
 const setViewMode = (mode: string) => {
@@ -29,19 +27,9 @@ const setViewMode = (mode: string) => {
   viewMode.value = mode
 }
 
-const load = async () => {
-  try {
-    active_orders.value = await $api("/orders/active");
-    all_orders.value = await $api("/orders");
-  } catch (e) {
-    active_orders.value = [] as any[];
-    all_orders.value = [] as any[];
-  }
-};
-
 const updateStatus = async (
   order: any,
-  status: "pending" | "preparing" | "served" | "paid"
+  status: "pending" | "preparing" | "ready" | "served" | "paid"
 ) => {
   const id = order._id || order.id;
   if (!id) return;
@@ -49,7 +37,7 @@ const updateStatus = async (
     method: "PATCH",
     body: { status },
   }).catch(() => { });
-  await load();
+  await pos.fetchOrders();
 };
 const editPending = (order: any) => {
   const id = order._id || order.id;
@@ -57,7 +45,7 @@ const editPending = (order: any) => {
   navigateTo(`/?editOrder=${id}`);
 };
 
-onMounted(load);
+onMounted(() => pos.fetchOrders());
 
 // Payment modal state (for cashier)
 const showPaymentModal = ref(false)
@@ -98,7 +86,7 @@ const confirmPayment = async () => {
       method: 'PATCH',
       body: { status: 'paid', amountPaid: paid }
     })
-    await load()
+    await pos.fetchOrders();
     closePaymentModal()
   } catch (e: any) {
     paymentError.value = e?.data?.message || e?.message || 'Payment failed'
@@ -109,29 +97,29 @@ const confirmPayment = async () => {
 </script>
 
 <template>
-  <div>
+  <div class="p-6">
     <h2 class="text-xl font-semibold mb-4">Order List</h2>
 
     <!-- Admins can toggle which view they want to use -->
-    <div v-if="auth.user?.role === 'admin'" class="mb-4 flex gap-2">
-      <button :class="['px-3 py-1 rounded', viewMode === 'chef' ? 'bg-gray-200' : 'bg-white']"
-        @click="setViewMode('chef')">
-        Chef View
-      </button>
-      <button :class="['px-3 py-1 rounded', viewMode === 'waiter' ? 'bg-gray-200' : 'bg-white']"
+    <div v-if="auth.user?.role === 'admin'" class="mb-4 flex gap-2 border-b pb-2">
+      <button :class="['px-3 py-1 rounded', viewMode === 'waiter' ? 'bg-teal-500 text-white' : 'bg-white']"
         @click="setViewMode('waiter')">
         Waiter View
       </button>
-      <button :class="['px-3 py-1 rounded', viewMode === 'cashier' ? 'bg-gray-200' : 'bg-white']"
+      <button :class="['px-3 py-1 rounded', viewMode === 'chef' ? 'bg-teal-500 text-white' : 'bg-white']"
+        @click="setViewMode('chef')">
+        Chef View
+      </button>
+      <button :class="['px-3 py-1 rounded', viewMode === 'cashier' ? 'bg-teal-500 text-white' : 'bg-white']"
         @click="setViewMode('cashier')">
         Cashier View
       </button>
     </div>
 
-    <ChefOrdersList v-if="viewMode === 'chef' && canChef" :orders="active_orders" @update-status="updateStatus" />
-    <WaiterOrdersList v-else-if="viewMode === 'waiter' && canWaiter" :orders="active_orders"
-      @edit-pending="editPending" />
-    <CashierOrdersList v-else-if="viewMode === 'cashier' && canCashier" :orders="all_orders"
+    <ChefOrdersList v-if="viewMode === 'chef' && canChef" :orders="pos.orders" @update-status="updateStatus" />
+    <WaiterOrdersList v-else-if="viewMode === 'waiter' && canWaiter" :orders="pos.orders"
+      @edit-pending="editPending" @update-status="updateStatus"/>
+    <CashierOrdersList v-else-if="viewMode === 'cashier' && canCashier" :orders="pos.orders"
       @process-payment="openPaymentModal" />
 
     <!-- Payment Modal (for cashier) -->

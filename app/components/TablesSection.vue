@@ -1,37 +1,54 @@
 <!-- components/TablesSection.vue -->
 <template>
-  <div class="bg-white rounded-lg shadow p-4">
-    <h2 class="text-lg font-semibold mb-4">Tables</h2>
-    <div class="grid grid-cols-2 gap-3">
+  <div class="bg-white rounded-lg shadow p-5">
+    <h2 class="text-xl font-semibold mb-4">Tables</h2>
+
+    <div class="grid grid-cols-2 gap-4">
       <div
         v-for="table in pos.tables"
         :key="table._id || table.id"
-        class="border rounded-lg p-3 text-center transition-colors select-none"
+        class="rounded-lg p-4 border shadow-sm transition-all select-none
+               flex flex-col items-center justify-center space-y-2"
         :class="[
-          (table.status === 'available') ? 'cursor-pointer hover:bg-green-50' : 'cursor-not-allowed opacity-60',
-          (table.status === 'available') ? 'bg-green-100 border-green-300' : '',
-          (table.status === 'occupied') ? 'bg-red-100 border-red-300' : '',
-          (table.status === 'reserved') ? 'bg-yellow-100 border-yellow-300' : '',
-          ((pos.selectedTable?._id || pos.selectedTable?.id) === (table._id || table.id)) ? 'ring-2 ring-blue-500' : ''
+          tableStatusClass(table.status),
+          table.status === 'available'
+            ? 'cursor-pointer hover:scale-[1.03]'
+            : 'cursor-not-allowed opacity-60',
+          isSelected(table) ? 'ring-4 ring-teal-500 scale-[1.03]' : ''
         ]"
-        :aria-disabled="table.status !== 'available'"
-        :title="table.status !== 'available' ? 'Not available' : 'Select table'"
         @click="onSelect(table)"
       >
-        <div class="font-medium">Table {{ table.tableNumber }}</div>
-        <div class="text-sm text-gray-600">Capacity: {{ table.seats }}</div>
-        <div class="text-xs capitalize mt-1">{{ table.status }}</div>
+        <!-- Table Number -->
+        <div class="text-md font-bold">
+          Table {{ table.tableNumber }}
+        </div>
+
+        <!-- Capacity -->
+        <div class="text-sm text-gray-600">
+          Seats: {{ table.seats }}
+        </div>
+
+        <!-- Status Badge -->
+        <span
+          class="px-2 py-1 text-xs rounded-full font-semibold flex items-center gap-1 capitalize"
+        >
+          {{ table.status }}
+        </span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { tableStatusClass } from '~/constants/utils'
 const pos = usePosStore()
 const emit = defineEmits(['select-table'])
 
+const isSelected = (table) =>
+  (pos.selectedTable?._id || pos.selectedTable?.id) === (table._id || table.id)
+
 const onSelect = (table) => {
-  if (table?.status !== 'available') return
+  if (table.status !== 'available') return
   emit('select-table', table._id || table.id)
 }
 </script>
