@@ -67,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-const { orderStatusClass } = await import('@/constants/utils');
+import { orderStatusClass } from '~/constants/utils';
 const props = defineProps<{ orders: any[] }>()
 const auth = useAuthStore()
 const notify = useNotifyStore()

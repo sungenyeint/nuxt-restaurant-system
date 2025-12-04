@@ -8,13 +8,20 @@
       </div>
 
       <!-- Order Info -->
-      <div v-if="pos.selectedTable" class="mt-4 p-3 bg-blue-50 rounded-lg">
-        <div class="flex justify-between items-center">
-          <span class="font-medium">Table {{ pos.selectedTable.tableNumber }}</span>
-          <button class="text-sm px-2 py-1 rounded bg-red-100 text-red-700" @click="pos.clearCurrentOrder()">
-            Clear
-          </button>
-        </div>
+      <div v-if="pos.selectedTable"
+        class="mt-3 px-3 py-2 bg-blue-50 text-blue-700 font-medium rounded flex justify-between items-center"
+      >
+          Table {{ pos.selectedTable.tableNumber }}
+        <button
+          v-if="pos.selectedTable"
+          class="text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 transition"
+          @click="pos.clearCurrentOrder()"
+        >
+          Clear
+        </button>
+      </div>
+      <div v-if="pos.currentOrder.orderType === 'takeaway'" class="mt-3 px-3 py-2 bg-blue-50 text-blue-700 font-medium rounded flex justify-between items-center">
+        Takeaway Order
       </div>
     </div>
 
@@ -66,7 +73,7 @@
 
       <button class="w-full py-3 rounded bg-blue-600 text-white disabled:opacity-50"
         :disabled="pos.currentOrder.items.length === 0 || (!pos.currentOrder.tableId && pos.currentOrder.orderType === 'dine-in')"
-        @click="$emit('submit-order')">
+        @click="$emit('confirm-submit')">
         {{ pos.editingOrderId ? 'Update Order' : 'Place Order' }} - ${{ pos.cartTotal.toFixed(2) }}
       </button>
     </div>
@@ -75,5 +82,5 @@
 
 <script setup>
 const pos = usePosStore()
-defineEmits(['close', 'submit-order'])
+defineEmits(['close', 'confirm-submit'])
 </script>

@@ -1,5 +1,6 @@
 <!-- pages/index.vue -->
 <template>
+  <Toast />
   <div class="h-screen flex flex-col">
     <!-- Header -->
     <div class="bg-white border-b">
@@ -60,7 +61,7 @@
     <div class="flex-1 grid grid-cols-4 gap-6 p-6 bg-gray-50">
       <!-- Tables Section -->
       <div class="col-span-1">
-        <TablesSection v-if="canPlaceOrder" @select-table="pos.setTable" />
+        <TablesSection v-if="canPlaceOrder && pos.currentOrder.orderType === 'dine-in'" @select-table="pos.setTable" />
         <TablesSection v-else />
       </div>
       <!-- Menu Section -->
@@ -72,7 +73,14 @@
     <!-- Cart Panel (slideover-like) -->
     <div v-if="showCart" class="fixed inset-0 bg-black/40 flex justify-end">
       <div class="w-full max-w-md h-full bg-white">
-        <CartPanel @close="showCart = false" @submit-order="handleSubmitOrder" />
+        <CartPanel @close="showCart = false" @confirm-submit="confirmSubmit" />
+      </div>
+    </div>
+
+    <!-- Confirm Order -->
+    <div v-if="showConfirm" class="fixed inset-0 bg-black/40 flex justify-end">
+      <div class="w-full max-w-md h-full bg-white">
+        <OrderConfirm @close="showConfirm = false" @submit-order="handleSubmitOrder" @back="showConfirm = false; showCart = true;" />
       </div>
     </div>
 
@@ -190,13 +198,19 @@
 
 <script setup lang="ts">
 import { onBeforeRouteLeave } from 'vue-router'
-const { orderStatusClass } = await import('@/constants/utils');
+import { useToast } from '~/composables/useToast';
+import { orderStatusClass } from '@/constants/utils';
+
+const { showToast } = useToast();
+
 const auth = useAuthStore();
 const pos = usePosStore();
 const route = useRoute();
 const { $api } = useNuxtApp();
 const showCart = ref(false);
 const showOrders = ref(false);
+const showConfirm = ref(false);
+
 
 // Payment modal state
 const showPaymentModal = ref(false)
@@ -249,8 +263,10 @@ const confirmPayment = async () => {
     })
     await pos.fetchOrders?.()
     closePaymentModal()
+    showToast('Payment processed successfully!', 'success');
   } catch (e: any) {
     paymentError.value = e?.data?.message || e?.message || 'Payment failed'
+    showToast('Failed to process payment. Please try again.', 'error');
   } finally {
     paymentLoading.value = false
   }
@@ -325,10 +341,16 @@ const updateStatus = async (
 
   try {
     await $api(`/orders/${id}/status`, { method: "PATCH", body: { status } });
+    showToast(`Order status updated to "${status}".`, 'success');
     await pos.fetchOrders?.();
   } catch (e) {
-    // noop
+    showToast(`Failed to update order status.`, 'error');
   }
+};
+
+const confirmSubmit = () => {
+  showCart.value = false;
+  showConfirm.value = true;
 };
 
 const handleSubmitOrder = async () => {
@@ -337,10 +359,13 @@ const handleSubmitOrder = async () => {
       alert("Please select a table for dine-in orders.");
       return;
     }
+
+    showConfirm.value = false;
     await pos.submitOrder();
-    showCart.value = false;
+
+    showToast('Order submitted successfully!', 'success');
   } catch (error) {
-    // handle error
+    showToast('Failed to submit order. Please try again.', 'error');
   }
 };
 

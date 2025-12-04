@@ -1,4 +1,5 @@
 <template>
+  <Toast />
   <div class="p-6">
     <h2 class="text-xl font-semibold mb-4">Tables</h2>
 
@@ -89,6 +90,8 @@ definePageMeta({ middleware: 'waiter' })
 const { $api } = useNuxtApp()
 import { ref } from 'vue'
 import { tableStatusClass } from '~/constants/utils';
+import { useToast } from '~/composables/useToast';
+const { showToast } = useToast();
 const pos = usePosStore();
 const tabs = [
   { key: 'all', label: 'All' },
@@ -102,8 +105,13 @@ const q = ref('')
 
 // const load = async () => { tables.value = await $api('/tables') }
 const setStatus = async (t:any, status:'available'|'occupied'|'cleaning'|'reserved') => {
-  await $api(`/tables/${t._id}/status`, { method: 'PATCH', body: { status : status } });
-  await pos.fetchTables();
+  try {
+    await $api(`/tables/${t._id}/status`, { method: 'PATCH', body: { status } })
+    await pos.fetchTables()
+    showToast(`Table ${t.tableNumber} status updated to "${status}".`, 'success');
+  } catch (e) {
+    showToast(`Failed to update table ${t.tableNumber} status.`, 'error');
+  }
 }
 
 const matchesFilter = (t:any) => {

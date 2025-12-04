@@ -1,4 +1,5 @@
 <template>
+  <Toast />
   <div class="p-6">
 
     <h2 class="text-xl font-semibold mb-4">Manage Users</h2>
@@ -52,6 +53,9 @@
 
 <script setup lang="ts">
 definePageMeta({ middleware: "admin" });
+import Toast from '~/components/Toast.vue';
+import { useToast } from '~/composables/useToast';
+const { showToast } = useToast();
 const items = ref<any[]>([]);
 const form = reactive<any>({
   _id: null,
@@ -87,10 +91,10 @@ const save = async () => {
   if (form.password) payload.password = form.password;
   if (form._id) {
     await $api(`/users/${form._id}`, { method: "PUT", body: payload });
-    alert('User updated successfully');
+    showToast('User updated successfully', 'success');
   } else {
     await $api("/users", { method: "POST", body: payload });
-    alert('User created successfully');
+    showToast('User created successfully', 'success');
   }
   reset();
   await load();
@@ -98,7 +102,7 @@ const save = async () => {
 const remove = async (id: string) => {
   if (!confirm("Are you sure want to delete this user?")) return;
   await $api(`/users/${id}`, { method: "DELETE" });
-  alert('User deleted successfully');
+  showToast('User deleted successfully', 'success');
   await load();
 };
 onMounted(load);

@@ -1,4 +1,5 @@
 <template>
+  <Toast />
   <div class="p-6">
 
     <h2 class="text-xl font-semibold mb-4">Manage Tables</h2>
@@ -50,6 +51,8 @@
 
 <script setup lang="ts">
 definePageMeta({ middleware: "admin" });
+import { useToast } from '~/composables/useToast';
+const { showToast } = useToast();
 const items = ref<any[]>([]);
 const form = reactive<any>({
   _id: null,
@@ -78,10 +81,10 @@ const save = async () => {
   };
   if (form._id) {
     await $api(`/tables/${form._id}`, { method: "PUT", body: payload });
-    alert('Table updated successfully');
+    showToast('Table updated successfully', 'success');
   } else {
     await $api("/tables", { method: "POST", body: payload });
-    alert('Table created successfully');
+    showToast('Table created successfully', 'success');
   }
   reset();
   await load();
@@ -89,7 +92,7 @@ const save = async () => {
 const remove = async (id: string) => {
   if (!confirm("Are you sure want to delete this table?")) return;
   await $api(`/tables/${id}`, { method: "DELETE" });
-  alert('Table deleted successfully');
+  showToast('Table deleted successfully', 'success');
   await load();
 };
 onMounted(load);

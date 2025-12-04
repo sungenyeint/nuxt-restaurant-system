@@ -16,14 +16,14 @@
             </div>
 
             <!-- Bell notification for chefs -->
-            <button v-if="auth.user?.role === 'chef' || auth.user?.role === 'admin' || auth.user?.role === 'waiter' || auth.user?.role === 'cashier'"
-              class="relative px-2 py-1 rounded hover:bg-white/10" @click="goOrders(auth.user?.role)" title="New orders">
+            <button
+              v-if="auth.user?.role === 'chef' || auth.user?.role === 'admin' || auth.user?.role === 'waiter' || auth.user?.role === 'cashier'"
+              class="relative px-2 py-1 rounded hover:bg-white/10" @click="goOrders(auth.user?.role)"
+              title="New orders">
               <!-- bell icon: normal or crossed when notifications disabled -->
               <LucideBell v-if="notify.enabled" class="h-5 w-5 text-white/50" />
               <LucideBellOff v-else class="h-5 w-5 text-white/95" />
-              <span
-                v-if="roleCount > 0"
-                class="absolute -top-1 -right-1 inline-flex items-center justify-center
+              <span v-if="roleCount > 0" class="absolute -top-1 -right-1 inline-flex items-center justify-center
                        text-[10px] font-semibold w-5 h-5 rounded-full bg-red-500 text-white">
                 {{ roleCount }}
               </span>
@@ -42,19 +42,14 @@
           : (sidebarOpen ? 'w-60 p-4' : 'w-16 p-2')
       ]">
         <div v-if="!isMobile" class="flex items-center mb-4 h-10">
-          <button
-            @click="sidebarOpen = !sidebarOpen"
-            class="flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition"
-          >
+          <button @click="sidebarOpen = !sidebarOpen"
+            class="flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition">
             <LucideMenu v-if="!sidebarOpen" class="w-6 h-6" />
             <LucideSidebarClose v-else class="w-6 h-6" />
           </button>
 
           <!-- Menu Title (desktop only) -->
-          <span
-            v-if="sidebarOpen && !isMobile"
-            class="ml-3 text-md font-semibold tracking-wide text-white/90"
-          >
+          <span v-if="sidebarOpen && !isMobile" class="ml-3 text-md font-semibold tracking-wide text-white/90">
             Menu
           </span>
         </div>
@@ -68,8 +63,7 @@
             auth.user?.role === 'chef' ||
             auth.user?.role === 'admin'
           " to="/" class="flex items-center gap-3 px-2 py-2 rounded hover:bg-teal-500/80 transition"
-            :class="isActive('/') ? 'bg-white/30' : 'text-white/90'"
-            @click="sidebarOpen = false">
+            :class="isActive('/') ? 'bg-white/30' : 'text-white/90'" @click="sidebarOpen = false" title="POS Dashboard">
             <LucideStore class="w-5 h-5" />
             <!-- Hide text when collapsed (desktop only) -->
             <span v-if="!isMobile && sidebarOpen">POS Dashboard</span>
@@ -88,16 +82,16 @@
             <NuxtLink to="/service/orders" :class="[
               'flex items-center gap-3 px-2 py-2 rounded hover:bg-teal-500/80 transition',
               isActive('/service/orders') ? 'bg-white/30' : 'text-white/90',
-            ]">
+            ]" title="Orders">
               <LucideListOrdered class="w-5 h-5" />
               <span v-if="!isMobile && sidebarOpen">Orders</span>
             </NuxtLink>
             <NuxtLink v-if="
               auth.user?.role === 'waiter' || auth.user?.role === 'admin'
             " to="/service/tables" :class="[
-                'flex items-center gap-3 px-2 py-2 rounded hover:bg-teal-500/80 transition',
-                isActive('/service/tables') ? 'bg-white/30' : 'text-white/90',
-              ]">
+              'flex items-center gap-3 px-2 py-2 rounded hover:bg-teal-500/80 transition',
+              isActive('/service/tables') ? 'bg-white/30' : 'text-white/90',
+            ]" title="Tables">
               <LucideTable2 class="w-5 h-5" />
               <span v-if="!isMobile && sidebarOpen">Tables</span>
             </NuxtLink>
@@ -107,38 +101,38 @@
           <template v-if="auth.user?.role === 'admin'">
             <div class="text-xs uppercase text-teal-500 mt-4 mb-2">Admin</div>
             <NuxtLink to="/admin/analytics" :class="[
-                'flex items-center gap-3 px-2 py-2 rounded hover:bg-teal-500/80 transition',
-                isActive('/admin/analytics', { startsWith: true }) ? 'bg-white/30' : 'text-white/90',
-              ]">
+              'flex items-center gap-3 px-2 py-2 rounded hover:bg-teal-500/80 transition',
+              isActive('/admin/analytics', { startsWith: true }) ? 'bg-white/30' : 'text-white/90',
+            ]" title="Analytics">
               <LucideChartBar class="w-5 h-5" />
               <span v-if="!isMobile && sidebarOpen">Analytics</span>
             </NuxtLink>
             <NuxtLink to="/admin/menus" :class="[
-                'flex items-center gap-3 px-2 py-2 rounded hover:bg-teal-500/80 transition',
-                isActive('/admin/menus', { startsWith: true }) ? 'bg-white/30' : 'text-white/90',
-              ]">
+              'flex items-center gap-3 px-2 py-2 rounded hover:bg-teal-500/80 transition',
+              isActive('/admin/menus', { startsWith: true }) ? 'bg-white/30' : 'text-white/90',
+            ]" title="Manage Menus">
               <LucideMenuSquare class="w-5 h-5" />
               <span v-if="!isMobile && sidebarOpen">Manage Menus</span>
             </NuxtLink>
 
             <NuxtLink to="/admin/categories" :class="[
-                'flex items-center gap-3 px-2 py-2 rounded hover:bg-teal-500/80 transition',
-                isActive('/admin/categories', { startsWith: true }) ? 'bg-white/30' : 'text-white/90',
-              ]">
+              'flex items-center gap-3 px-2 py-2 rounded hover:bg-teal-500/80 transition',
+              isActive('/admin/categories', { startsWith: true }) ? 'bg-white/30' : 'text-white/90',
+            ]" title="Manage Categories">
               <LucideList class="w-5 h-5" />
               <span v-if="!isMobile && sidebarOpen">Manage Categories</span>
             </NuxtLink>
             <NuxtLink to="/admin/tables" :class="[
-                'flex items-center gap-3 px-2 py-2 rounded hover:bg-teal-500/80 transition',
-                isActive('/admin/tables', { startsWith: true }) ? 'bg-white/30' : 'text-white/90',
-              ]">
+              'flex items-center gap-3 px-2 py-2 rounded hover:bg-teal-500/80 transition',
+              isActive('/admin/tables', { startsWith: true }) ? 'bg-white/30' : 'text-white/90',
+            ]" title="Manage Tables">
               <LucideTableConfig class="w-5 h-5" />
               <span v-if="!isMobile && sidebarOpen">Manage Tables</span>
             </NuxtLink>
             <NuxtLink to="/admin/users" :class="[
-                'flex items-center gap-3 px-2 py-2 rounded hover:bg-teal-500/80 transition',
-                isActive('/admin/users', { startsWith: true }) ? 'bg-white/30' : 'text-white/90',
-              ]">
+              'flex items-center gap-3 px-2 py-2 rounded hover:bg-teal-500/80 transition',
+              isActive('/admin/users', { startsWith: true }) ? 'bg-white/30' : 'text-white/90',
+            ]" title="Manage Users">
               <LucideUserCircle class="w-5 h-5" />
               <span v-if="!isMobile && sidebarOpen">Manage Users</span>
             </NuxtLink>
@@ -146,12 +140,13 @@
         </nav>
         <div class="mt-4 space-y-3">
           <!-- Admin: Notifications toggle -->
-          <div v-if="auth.user?.role === 'admin'" class="flex items-center justify-between px-2" :class="!sidebarOpen ? 'p-2 rounded hover:bg-teal-500/80' : ''">
-            <LucideBell v-if="notify.enabled" @click="notify.toggleEnabled()" class="w-5 h-5"/>
-            <LucideBellOff v-else @click="notify.toggleEnabled()" class="w-5 h-5"/>
+          <div v-if="auth.user?.role === 'admin'" class="flex items-center justify-between px-2"
+            :class="!sidebarOpen ? 'p-2 rounded hover:bg-teal-500/80' : ''" title="Toggle Notification">
+            <LucideBell v-if="notify.enabled" @click="notify.toggleEnabled()" class="w-5 h-5" />
+            <LucideBellOff v-else @click="notify.toggleEnabled()" class="w-5 h-5" />
             <span v-if="!isMobile && sidebarOpen" class="text-sm">Notifications</span>
-            <button v-if="!isMobile && sidebarOpen" @click="notify.toggleEnabled()" class="ml-2 px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-sm"
-              :aria-pressed="!notify.enabled"
+            <button v-if="!isMobile && sidebarOpen" @click="notify.toggleEnabled()"
+              class="ml-2 px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-sm" :aria-pressed="!notify.enabled"
               :title="notify.enabled ? 'Disable notifications' : 'Enable notifications'">
               <span v-if="notify.enabled">On</span>
               <span v-else>Off</span>
@@ -160,7 +155,7 @@
 
           <div>
             <button class="flex items-center gap-3 px-2 py-2 rounded hover:bg-teal-500/80 transition w-full"
-              @click="handleLogout">
+              title="Logout" @click="handleLogout">
               <LucideLogOut class="w-5 h-5" />
               <span v-if="!isMobile && sidebarOpen">Logout</span>
             </button>
@@ -212,8 +207,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   try {
-    window.removeEventListener('resize', () => {})
-  } catch (e) {}
+    window.removeEventListener('resize', () => { })
+  } catch (e) { }
 })
 
 type Role = 'chef' | 'waiter' | 'cashier' | 'admin';

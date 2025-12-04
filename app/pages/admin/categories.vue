@@ -1,4 +1,5 @@
 <template>
+  <Toast />
   <div class="p-6">
     <h2 class="text-xl font-semibold mb-4">Manage Categories</h2>
 
@@ -57,6 +58,8 @@
 
 <script setup lang="ts">
 definePageMeta({ middleware: "admin" });
+import { useToast } from '~/composables/useToast';
+const { showToast } = useToast();
 const items = ref<any[]>([]);
 const form = reactive<any>({ _id: null, name: "", description: "" });
 const { $api } = useNuxtApp();
@@ -71,10 +74,10 @@ const edit = (c: any) => Object.assign(form, c);
 const save = async () => {
   if (form._id) {
     await $api(`/categories/${form._id}`, { method: "PUT", body: form });
-    alert('Category updated successfully');
+    showToast('Category updated successfully', 'success');
   } else {
     await $api("/categories", { method: "POST", body: form });
-    alert('Category created successfully');
+    showToast('Category created successfully', 'success');
   }
   reset();
   await load();
@@ -83,7 +86,7 @@ const save = async () => {
 const remove = async (id: string) => {
   if (!confirm("Are you sure want to delete this category?")) return;
   await $api(`/categories/${id}`, { method: "DELETE" });
-  alert('Category deleted successfully');
+  showToast('Category deleted successfully', 'success');
   await load();
 };
 

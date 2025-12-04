@@ -2,6 +2,9 @@
 import ChefOrdersList from "~/components/orders/ChefOrdersList.vue";
 import WaiterOrdersList from "~/components/orders/WaiterOrdersList.vue";
 import CashierOrdersList from "~/components/orders/CashierOrdersList.vue";
+import { useToast } from '~/composables/useToast';
+
+const { showToast } = useToast();
 
 const { $api } = useNuxtApp();
 const auth = useAuthStore();
@@ -33,10 +36,16 @@ const updateStatus = async (
 ) => {
   const id = order._id || order.id;
   if (!id) return;
-  await $api(`/orders/${id}/status`, {
-    method: "PATCH",
-    body: { status },
-  }).catch(() => { });
+  try {
+    await $api(`/orders/${id}/status`, {
+      method: "PATCH",
+      body: { status },
+    });
+    showToast(`Order status updated to "${status}".`, 'success');
+  } catch (e: any) {
+    showToast(`Failed to update order status: ${e?.data?.message || e?.message || 'Unknown error'}`, 'error');
+    return;
+  }
   await pos.fetchOrders();
 };
 const editPending = (order: any) => {
@@ -88,8 +97,10 @@ const confirmPayment = async () => {
     })
     await pos.fetchOrders();
     closePaymentModal()
+    showToast('Payment processed successfully.', 'success');
   } catch (e: any) {
-    paymentError.value = e?.data?.message || e?.message || 'Payment failed'
+    paymentError.value = e?.data?.message || e?.message || 'Payment failed';
+    showToast('Failed to process payment. Please try again.', 'error');
   } finally {
     paymentLoading.value = false
   }
@@ -97,6 +108,7 @@ const confirmPayment = async () => {
 </script>
 
 <template>
+  <Toast />
   <div class="p-6">
     <h2 class="text-xl font-semibold mb-4">Order List</h2>
 
@@ -117,8 +129,8 @@ const confirmPayment = async () => {
     </div>
 
     <ChefOrdersList v-if="viewMode === 'chef' && canChef" :orders="pos.orders" @update-status="updateStatus" />
-    <WaiterOrdersList v-else-if="viewMode === 'waiter' && canWaiter" :orders="pos.orders"
-      @edit-pending="editPending" @update-status="updateStatus"/>
+    <WaiterOrdersList v-else-if="viewMode === 'waiter' && canWaiter" :orders="pos.orders" @edit-pending="editPending"
+      @update-status="updateStatus" />
     <CashierOrdersList v-else-if="viewMode === 'cashier' && canCashier" :orders="pos.orders"
       @process-payment="openPaymentModal" />
 
@@ -127,7 +139,7 @@ const confirmPayment = async () => {
       <div class="w-full max-w-md bg-white rounded shadow p-6">
         <h3 class="text-lg font-semibold mb-3">Process Payment</h3>
         <div class="mb-2 text-sm text-gray-700">Order #{{ (paymentOrder?._id ||
-          paymentOrder?.id)?.toString().slice?.(0,6) }}</div>
+          paymentOrder?.id)?.toString().slice?.(0, 6) }}</div>
         <div class="mb-2">Total: <span class="font-semibold">${{ Number(paymentOrder?.total || 0).toFixed(2) }}</span>
         </div>
 
@@ -136,7 +148,7 @@ const confirmPayment = async () => {
 
         <div class="mb-3 text-sm">
           Change: <span class="font-semibold">${{ (Number(tendered || 0) - Number(paymentOrder?.total || 0)).toFixed(2)
-            }}</span>
+          }}</span>
         </div>
 
         <div v-if="paymentError" class="text-red-600 text-sm mb-2">{{ paymentError }}</div>

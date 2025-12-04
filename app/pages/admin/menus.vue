@@ -1,4 +1,5 @@
 <template>
+  <Toast />
   <div class="p-6">
 
     <h2 class="text-xl font-semibold mb-4">Manage Menus</h2>
@@ -58,6 +59,8 @@
 
 <script setup lang="ts">
 definePageMeta({ middleware: "admin" });
+import { useToast } from '~/composables/useToast';
+const { showToast } = useToast();
 const { toUrl } = useFileUrl();
 const items = ref<any[]>([]);
 const categories = ref<any[]>([]);
@@ -104,10 +107,10 @@ const save = async () => {
   console.log('form data ', fd);
   if (form._id) {
     await $api(`/menus/${form._id}`, { method: "PUT", body: fd });
-    alert('Menu updated successfully');
+    showToast('Menu updated successfully', 'success');
   } else {
     await $api("/menus", { method: "POST", body: fd });
-    alert('Menu created successfully');
+    showToast('Menu created successfully', 'success');
   }
   reset();
   imageFile.value = null;
@@ -116,7 +119,7 @@ const save = async () => {
 const remove = async (id: string) => {
   if (!confirm("Are you sure want to delete this menu?")) return;
   await $api(`/menus/${id}`, { method: "DELETE" });
-  alert('Menu deleted successfully');
+  showToast('Menu deleted successfully', 'success');
   await load();
 };
 

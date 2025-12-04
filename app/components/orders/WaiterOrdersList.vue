@@ -1,5 +1,12 @@
 <template>
   <div class="space-y-6">
+    <div class="mb-3 flex gap-2">
+      <button v-for="tab in tabs" :key="tab.key" class="px-3 py-1 rounded text-sm border"
+        :class="tab.key === active ? 'bg-teal-600 text-white font-medium' : 'hover:bg-teal-600 hover:text-white'"
+        @click="active = tab.key">
+        {{ tab.label }}
+      </button>
+    </div>
     <!-- Dine-in grouped by table -->
     <div class="rounded-lg shadow p-4 bg-white">
       <div class="text-md uppercase font-semibold text-gray-500 mb-2 border-b pb-2">Dine-in</div>
@@ -138,10 +145,21 @@
 </template>
 
 <script setup lang="ts">
-const { orderStatusClass } = await import('@/constants/utils');
+import { orderStatusClass } from '~/constants/utils';
 const props = defineProps<{ orders: any[] }>();
 const auth = useAuthStore();
 const notify = useNotifyStore();
+
+type TabKey = 'all' | 'pending' | 'preparing' | 'ready' | 'served' | 'paid';
+const tabs: Array<{ key: TabKey; label: string }> = [
+  { key: 'all', label: 'All' },
+  { key: 'pending', label: 'Pending' },
+  { key: 'preparing', label: 'Preparing' },
+  { key: 'ready', label: 'Ready to Serve' },
+  { key: 'served', label: 'Served' },
+  { key: 'paid', label: 'Paid' },
+]
+const active = ref<TabKey>('all')
 
 const dine = computed(() =>
   props.orders.filter((o) => o.orderType === "dine-in")
@@ -163,9 +181,26 @@ const groupByTable = (arr: any[]) => {
   }));
 };
 const grouped = computed(() => ({
-  dine: groupByTable(dine.value),
-  takeaway: takeaway.value,
+  dine: active.value === 'all'
+    ? groupByTable(dine.value)
+    : groupByTable(dine.value.filter(o =>
+      active.value === 'served'
+        ? o.status === 'served'
+        : active.value === 'ready'
+          ? o.status === 'ready'
+          : o.status === active.value
+    )),
+  takeaway: active.value === 'all'
+    ? takeaway.value
+    : takeaway.value.filter(o =>
+      active.value === 'served'
+        ? o.status === 'served'
+        : active.value === 'ready'
+          ? o.status === 'ready'
+          : o.status === active.value
+    ),
 }));
+
 const { isFlashing } = useOrderFlash(
   (computed(() => [...dine.value, ...takeaway.value])),
   notify,
