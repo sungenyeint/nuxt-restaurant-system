@@ -1,12 +1,5 @@
 <template>
   <div class="space-y-6">
-    <div class="mb-3 flex gap-2">
-      <button v-for="tab in tabs" :key="tab.key" class="px-3 py-1 rounded text-sm border"
-        :class="tab.key === active ? 'bg-teal-600 text-white font-medium' : 'hover:bg-teal-600 hover:text-white'"
-        @click="active = tab.key">
-        {{ tab.label }}
-      </button>
-    </div>
     <!-- Dine-in grouped by table -->
     <div class="rounded-lg shadow p-4 bg-white">
       <div class="text-md uppercase font-semibold text-gray-500 mb-2 border-b pb-2">Dine-in</div>
@@ -145,67 +138,41 @@
 </template>
 
 <script setup lang="ts">
-import { orderStatusClass } from '~/constants/utils';
-const props = defineProps<{ orders: any[] }>();
+import { orderStatusClass, shortId } from '~/constants/utils';
+const props = defineProps<{
+  orders: any[],
+}>();
 const auth = useAuthStore();
 const notify = useNotifyStore();
 
-type TabKey = 'all' | 'pending' | 'preparing' | 'ready' | 'served' | 'paid';
-const tabs: Array<{ key: TabKey; label: string }> = [
-  { key: 'all', label: 'All' },
-  { key: 'pending', label: 'Pending' },
-  { key: 'preparing', label: 'Preparing' },
-  { key: 'ready', label: 'Ready to Serve' },
-  { key: 'served', label: 'Served' },
-  { key: 'paid', label: 'Paid' },
-]
-const active = ref<TabKey>('all')
+// split filtered into dine & takeaway (NOT original props)
+const dine = computed(() => props.orders.filter(o => o.orderType === "dine-in"));
+const takeaway = computed(() => props.orders.filter(o => o.orderType !== "dine-in"));
 
-const dine = computed(() =>
-  props.orders.filter((o) => o.orderType === "dine-in")
-);
-const takeaway = computed(() =>
-  props.orders.filter((o) => o.orderType !== "dine-in")
-);
 const groupByTable = (arr: any[]) => {
   const map = new Map<string, any[]>();
   for (const o of arr) {
-    const key = (o.table?._id || o.table || "none") as string;
+    const key = o.table?._id || o.table || "none";
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(o);
   }
-  return Array.from(map.entries()).map(([tableKey, orders]) => ({
+  return [...map.entries()].map(([tableKey, orders]) => ({
     tableKey,
     tableNumber: orders[0]?.table?.tableNumber,
-    orders,
+    orders
   }));
 };
+
 const grouped = computed(() => ({
-  dine: active.value === 'all'
-    ? groupByTable(dine.value)
-    : groupByTable(dine.value.filter(o =>
-      active.value === 'served'
-        ? o.status === 'served'
-        : active.value === 'ready'
-          ? o.status === 'ready'
-          : o.status === active.value
-    )),
-  takeaway: active.value === 'all'
-    ? takeaway.value
-    : takeaway.value.filter(o =>
-      active.value === 'served'
-        ? o.status === 'served'
-        : active.value === 'ready'
-          ? o.status === 'ready'
-          : o.status === active.value
-    ),
+  dine: groupByTable(dine.value),
+  takeaway: takeaway.value
 }));
 
 const { isFlashing } = useOrderFlash(
-  (computed(() => [...dine.value, ...takeaway.value])),
+  computed(() => props.orders),
   notify,
   auth.user?.role
 );
-const shortId = (o: any) => (o._id || o.id)?.slice?.(0, 6) || o._id || o.id;
+
 defineEmits(["edit-pending", "update-status"]);
 </script>

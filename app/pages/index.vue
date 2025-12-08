@@ -1,5 +1,12 @@
 <!-- pages/index.vue -->
 <template>
+  <!-- Global Loading Overlay -->
+  <div v-if="pos.globalLoading" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div class="flex flex-col items-center gap-3">
+      <div class="animate-spin w-12 h-12 border-4 border-gray-300 border-t-sky-500 rounded-full"></div>
+      <div class="text-white text-lg font-medium">Loading...</div>
+    </div>
+  </div>
   <Toast />
   <div class="h-screen flex flex-col">
     <!-- Header -->

@@ -2,13 +2,56 @@
 import ChefOrdersList from "~/components/orders/ChefOrdersList.vue";
 import WaiterOrdersList from "~/components/orders/WaiterOrdersList.vue";
 import CashierOrdersList from "~/components/orders/CashierOrdersList.vue";
+import AdminOrderList from "~/components/orders/AdminOrderList.vue";
 import { useToast } from '~/composables/useToast';
+import type { TabKey, OrderStatus } from "~/types";
+import { tabs } from "~/constants/utils";
+import { useFilter } from '~/composables/useFilter';
+import dayjs from "dayjs";
 
 const { showToast } = useToast();
-
 const { $api } = useNuxtApp();
 const auth = useAuthStore();
 const pos = usePosStore();
+const notify = useNotifyStore();
+const dateFilter = ref<"yesterday"|"today"|"all"|"custom">("today");
+const active = ref<TabKey>('all');
+const customDate = ref("");
+
+const setTab = (tab: TabKey) => {
+  active.value = tab;
+}
+
+const dateFilteredOrders = computed(() => {
+  if (dateFilter.value !== "custom") {
+    customDate.value = "";
+  }
+  if (dateFilter.value === "all") return pos.orders;
+
+  if (dateFilter.value === "custom") {
+    return pos.orders.filter(
+      o => dayjs(o.createdAt).format("YYYY-MM-DD") === customDate.value
+    );
+  }
+
+  return pos.orders.filter(o => {
+    const d = dayjs(o.createdAt).format("YYYY-MM-DD");
+    const today = dayjs().format("YYYY-MM-DD");
+
+    if (dateFilter.value === "today") return d === today;
+    if (dateFilter.value === "yesterday") return d === dayjs().subtract(1, "day").format("YYYY-MM-DD");
+
+    return true;
+  });
+});
+
+const { filtered } = useFilter(
+  dateFilteredOrders,
+  active,
+  auth.user?.role,
+  notify,
+);
+
 const canChef = computed(
   () => auth.user?.role === "chef" || auth.user?.role === "admin"
 );
@@ -19,8 +62,13 @@ const canCashier = computed(
   () => auth.user?.role === "cashier" || auth.user?.role === "admin"
 );
 
-// View mode: 'chef' | 'waiter' | 'cashier'. Default based on actual role.
-const defaultMode = auth.user?.role === 'chef' ? 'chef' : auth.user?.role === 'cashier' ? 'cashier' : 'waiter'
+const defaultMode = auth.user?.role === 'waiter'
+  ? 'waiter'
+  : auth.user?.role === 'chef'
+    ? 'chef'
+    : auth.user?.role === 'cashier'
+      ? 'cashier'
+      : 'admin';
 const viewMode = ref<string>(defaultMode)
 
 const setViewMode = (mode: string) => {
@@ -32,7 +80,7 @@ const setViewMode = (mode: string) => {
 
 const updateStatus = async (
   order: any,
-  status: "pending" | "preparing" | "ready" | "served" | "paid"
+  status: OrderStatus
 ) => {
   const id = order._id || order.id;
   if (!id) return;
@@ -54,7 +102,9 @@ const editPending = (order: any) => {
   navigateTo(`/?editOrder=${id}`);
 };
 
-onMounted(() => pos.fetchOrders());
+onMounted(() => {
+  pos.fetchOrders();
+});
 
 // Payment modal state (for cashier)
 const showPaymentModal = ref(false)
@@ -114,6 +164,10 @@ const confirmPayment = async () => {
 
     <!-- Admins can toggle which view they want to use -->
     <div v-if="auth.user?.role === 'admin'" class="mb-4 flex gap-2 border-b pb-2">
+      <button :class="['px-3 py-1 rounded', viewMode === 'admin' ? 'bg-teal-500 text-white' : 'bg-white']"
+        @click="setViewMode('admin')">
+        Admin View
+      </button>
       <button :class="['px-3 py-1 rounded', viewMode === 'waiter' ? 'bg-teal-500 text-white' : 'bg-white']"
         @click="setViewMode('waiter')">
         Waiter View
@@ -128,11 +182,38 @@ const confirmPayment = async () => {
       </button>
     </div>
 
-    <ChefOrdersList v-if="viewMode === 'chef' && canChef" :orders="pos.orders" @update-status="updateStatus" />
-    <WaiterOrdersList v-else-if="viewMode === 'waiter' && canWaiter" :orders="pos.orders" @edit-pending="editPending"
+    <div class="mb-4 flex gap-2 border-b pb-2">
+      <input type="date" v-model="customDate" @change="dateFilter='custom'" class="px-3 py-1 rounded text-sm border" />
+      <button
+        v-for="f in [
+          { key: 'yesterday', label: 'Yesterday' },
+          { key: 'today', label: 'Today' },
+          { key: 'all', label: 'All' },
+        ]"
+        :key="f.key"
+        class="px-3 py-1 rounded text-sm border"
+        :class="dateFilter === f.key ? 'bg-amber-600 text-white font-medium' : 'bg-white hover:bg-amber-200'"
+        @click="dateFilter = f.key"
+      >
+        {{ f.label }}
+      </button>
+    </div>
+
+    <div class="mb-3 flex gap-2">
+      <button v-for="tab in tabs" :key="tab.key" class="px-3 py-1 rounded text-sm border"
+        :class="tab.key === active ? 'bg-teal-600 text-white font-medium' : 'hover:bg-teal-600 hover:text-white'"
+        @click="setTab(tab.key)">
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <ChefOrdersList v-if="viewMode === 'chef' && canChef" :orders="filtered" @update-status="updateStatus" />
+    <WaiterOrdersList v-else-if="viewMode === 'waiter' && canWaiter" :orders="filtered" @edit-pending="editPending"
       @update-status="updateStatus" />
-    <CashierOrdersList v-else-if="viewMode === 'cashier' && canCashier" :orders="pos.orders"
+    <CashierOrdersList v-else-if="viewMode === 'cashier' && canCashier" :orders="filtered"
       @process-payment="openPaymentModal" />
+    <AdminOrderList v-else-if="auth.user?.role === 'admin'" :orders="filtered" @update-status="updateStatus"
+      @edit-pending="editPending" @process-payment="openPaymentModal" />
 
     <!-- Payment Modal (for cashier) -->
     <div v-if="showPaymentModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">

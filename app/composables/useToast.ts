@@ -1,6 +1,6 @@
 import { ref, provide } from "vue";
 
-type ToastType = "success" | "error";
+type ToastType = "success" | "error" | "info";
 
 export function useToast() {
   const toast = ref<{

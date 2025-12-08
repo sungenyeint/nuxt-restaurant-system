@@ -1,9 +1,10 @@
 import { ref, watch, onMounted } from "vue";
+import type { Role } from "~/types";
 
 export function useOrderFlash(
   ordersRef: ComputedRef<any[]>,
   notifyStore: any,
-  role: string | undefined
+  role: Role
 ) {
   const flashing = ref<Record<string, boolean>>({});
 

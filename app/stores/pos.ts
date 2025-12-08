@@ -1,7 +1,7 @@
+// stores/pos.ts
 import { defineStore } from "pinia";
 import { useAuthStore } from "./auth";
 
-// stores/pos.ts
 export const usePosStore = defineStore("pos", {
   state: () => ({
     currentOrder: {
@@ -22,31 +22,39 @@ export const usePosStore = defineStore("pos", {
     activeOrders: [] as Array<any>,
     selectedTable: null as any,
     editingOrderId: null as string | null,
+    globalLoading: false as boolean, // 🔹 global loading state
   }),
 
   getters: {
-    cartTotal: (state) => {
-      return state.currentOrder.items.reduce(
+    cartTotal: (state) =>
+      state.currentOrder.items.reduce(
         (total, item) => total + item.price * item.qty,
         0
-      );
-    },
-    cartItemCount: (state) => {
-      return state.currentOrder.items.reduce(
-        (count, item) => count + item.qty,
-        0
-      );
-    },
+      ),
+    cartItemCount: (state) =>
+      state.currentOrder.items.reduce((count, item) => count + item.qty, 0),
   },
 
   actions: {
+    // 🔹 helper to wrap async actions
+    async withLoading<T>(fn: () => Promise<T>): Promise<T> {
+      this.globalLoading = true;
+      try {
+        return await fn();
+      } finally {
+        this.globalLoading = false;
+      }
+    },
+
     async loadInitialData() {
-      await Promise.all([
-        this.fetchCategories(),
-        this.fetchMenus(),
-        this.fetchTables(),
-        this.fetchOrders(),
-      ]);
+      await this.withLoading(async () => {
+        await Promise.all([
+          this.fetchCategories(),
+          this.fetchMenus(),
+          this.fetchTables(),
+          this.fetchOrders(),
+        ]);
+      });
     },
 
     async fetchCategories() {
@@ -76,9 +84,7 @@ export const usePosStore = defineStore("pos", {
       const orders: any = await $fetch(`${api}/orders`, {
         headers: { ...auth.authHeader() },
       });
-      this.activeOrders = orders.filter((o: any) =>
-        o.status !== "paid"
-      );
+      this.activeOrders = orders.filter((o: any) => o.status !== "paid");
       this.orders = orders;
     },
 
@@ -133,63 +139,61 @@ export const usePosStore = defineStore("pos", {
     },
 
     async submitOrder() {
-      const api = useRuntimeConfig().public.apiBase;
-      const auth = useAuthStore();
-      const payload = {
-        table: this.currentOrder.tableId,
-        orderType: this.currentOrder.orderType,
-        items: this.currentOrder.items.map((i) => ({ menu: i.itemId, qty: i.qty })),
-        total: this.cartTotal,
-        notes: this.currentOrder.notes || "",
-      };
+      return this.withLoading(async () => {
+        const api = useRuntimeConfig().public.apiBase;
+        const auth = useAuthStore();
+        const payload = {
+          table: this.currentOrder.tableId,
+          orderType: this.currentOrder.orderType,
+          items: this.currentOrder.items.map((i) => ({ menu: i.itemId, qty: i.qty })),
+          total: this.cartTotal,
+          notes: this.currentOrder.notes || "",
+        };
 
-      const isEditing = !!this.editingOrderId;
-      const url = isEditing ? `${api}/orders/${this.editingOrderId}` : `${api}/orders`;
-      const method = isEditing ? "PUT" : "POST";
+        const isEditing = !!this.editingOrderId;
+        const url = isEditing ? `${api}/orders/${this.editingOrderId}` : `${api}/orders`;
+        const method = isEditing ? "PUT" : "POST";
 
-      const order: any = await $fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json", ...auth.authHeader() },
-        body: payload,
+        const order: any = await $fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json", ...auth.authHeader() },
+          body: payload,
+        });
+
+        this.clearCurrentOrder();
+        await this.fetchOrders();
+        return order;
       });
-
-      this.clearCurrentOrder();
-      await this.fetchOrders();
-      return order;
     },
+
     async loadOrder(orderId: string) {
-      this.editingOrderId = orderId;
-      // Ensure we have fresh active orders
-      if (!this.activeOrders?.length) {
-        await this.fetchOrders()
-      }
-      let order = this.activeOrders.find((o: any) => (o._id || o.id) === orderId)
+      return this.withLoading(async () => {
+        this.editingOrderId = orderId;
+        if (!this.activeOrders?.length) await this.fetchOrders();
+        let order = this.activeOrders.find((o: any) => (o._id || o.id) === orderId);
+        if (!order) {
+          await this.fetchOrders();
+          order = this.activeOrders.find((o: any) => (o._id || o.id) === orderId);
+        }
+        if (!order) return;
 
-      // If not found, try refreshing once
-      if (!order) {
-        await this.fetchOrders()
-        order = this.activeOrders.find((o: any) => (o._id || o.id) === orderId)
-      }
-      if (!order) return
+        this.currentOrder.orderType = order.orderType === 'dine-in' ? 'dine-in' : 'takeaway';
+        this.currentOrder.items = (order.items || []).map((it: any) => ({
+          itemId: it.menu?._id || it.menu || it.itemId,
+          name: it.menu?.name || it.name,
+          price: Number(it.menu?.price ?? it.price ?? 0),
+          qty: it.qty ?? 1,
+        }));
+        this.currentOrder.notes = order.notes || "";
 
-      // Map to currentOrder
-      this.currentOrder.orderType = order.orderType === 'dine-in' ? 'dine-in' : 'takeaway'
-      this.currentOrder.items = (order.items || []).map((it: any) => ({
-        itemId: it.menu?._id || it.menu || it.itemId,
-        name: it.menu?.name || it.name,
-        price: Number(it.menu?.price ?? it.price ?? 0),
-        qty: it.qty ?? 1,
-      }))
-      this.currentOrder.notes = order.notes || ""
-
-      // Table selection for dine-in
-      if (this.currentOrder.orderType === 'dine-in') {
-        const tableId = order.table?._id || order.table
-        if (tableId) this.setTable(tableId)
-      } else {
-        this.currentOrder.tableId = null
-        this.selectedTable = null
-      }
+        if (this.currentOrder.orderType === 'dine-in') {
+          const tableId = order.table?._id || order.table;
+          if (tableId) this.setTable(tableId);
+        } else {
+          this.currentOrder.tableId = null;
+          this.selectedTable = null;
+        }
+      });
     },
   },
 });

@@ -1,19 +1,18 @@
 import { defineStore } from "pinia";
-import waiter from "~/middleware/waiter";
 
 export const useNotifyStore = defineStore("notify", {
   state: () => ({
     // notifications counters per role
-    waiterCount: 0,
-    chefCount: 0,
-    cashierCount: 0,
-    adminCount: 0,
+    waiterCount: 0 as number,
+    chefCount: 0 as number,
+    cashierCount: 0 as number,
+    adminCount: 0 as number,
     waiterLastId: [] as string[],
     chefLastId: [] as string[],
     cashierLastId: [] as string[],
     adminLastId: [] as string[],
     // whether to show/receive notifications (admin can toggle)
-    enabled: true,
+    enabled: true as boolean,
   }),
   actions: {
     sendChef(n = 1) {
