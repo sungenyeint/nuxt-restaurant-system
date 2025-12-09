@@ -153,8 +153,8 @@ const confirmPayment = async () => {
     })
     await pos.fetchOrders();
     closePaymentModal()
-    openPrintWindow(`${api}/print/customer/${id}`, true);
     showToast('Payment processed successfully.', 'success');
+    openPrintWindow(`${api}/print/customer/${id}`, true);
   } catch (e: any) {
     paymentError.value = e?.data?.message || e?.message || 'Payment failed';
     showToast('Failed to process payment. Please try again.', 'error');

@@ -297,7 +297,7 @@ const confirmPayment = async () => {
     await pos.fetchOrders?.()
     closePaymentModal()
     showToast('Payment processed successfully!', 'success');
-    openPrintWindow(`${api}/print/qr/${id}`, true);
+    openPrintWindow(`${api}/print/customer/${id}`, true);
   } catch (e: any) {
     paymentError.value = e?.data?.message || e?.message || 'Payment failed'
     showToast('Failed to process payment. Please try again.', 'error');
@@ -401,9 +401,7 @@ const handleSubmitOrder = async () => {
     const order = await pos.submitOrder();
 
     showToast('Order submitted successfully!', 'success');
-    if (auth.user?.role === "chef") {
-      openPrintWindow(`${api}/print/kitchen/${order._id}`, true);
-    }
+    openPrintWindow(`${api}/print/kitchen/${order._id}`, true);
   } catch (error) {
     showToast('Failed to submit order. Please try again.', 'error');
   }
