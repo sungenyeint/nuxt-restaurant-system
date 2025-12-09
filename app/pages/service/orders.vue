@@ -14,6 +14,7 @@ const { $api } = useNuxtApp();
 const auth = useAuthStore();
 const pos = usePosStore();
 const notify = useNotifyStore();
+const { openPrintWindow } = usePrint();
 const dateFilter = ref<"yesterday"|"today"|"all"|"custom">("today");
 const active = ref<TabKey>('all');
 const customDate = ref("");
@@ -127,6 +128,11 @@ const closePaymentModal = () => {
   paymentError.value = null
 }
 
+const api = useRuntimeConfig().public.apiBase;
+const printReceipt = (orderId: string) => {
+  openPrintWindow(`${api}/print/customer/${orderId}`, true);
+};
+
 const confirmPayment = async () => {
   if (!paymentOrder.value) return
   const id = paymentOrder.value._id || paymentOrder.value.id
@@ -147,6 +153,7 @@ const confirmPayment = async () => {
     })
     await pos.fetchOrders();
     closePaymentModal()
+    openPrintWindow(`${api}/print/customer/${id}`, true);
     showToast('Payment processed successfully.', 'success');
   } catch (e: any) {
     paymentError.value = e?.data?.message || e?.message || 'Payment failed';
@@ -215,31 +222,47 @@ const confirmPayment = async () => {
     <AdminOrderList v-else-if="auth.user?.role === 'admin'" :orders="filtered" @update-status="updateStatus"
       @edit-pending="editPending" @process-payment="openPaymentModal" />
 
-    <!-- Payment Modal (for cashier) -->
-    <div v-if="showPaymentModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div class="w-full max-w-md bg-white rounded shadow p-6">
-        <h3 class="text-lg font-semibold mb-3">Process Payment</h3>
-        <div class="mb-2 text-sm text-gray-700">Order #{{ (paymentOrder?._id ||
-          paymentOrder?.id)?.toString().slice?.(0, 6) }}</div>
-        <div class="mb-2">Total: <span class="font-semibold">${{ Number(paymentOrder?.total || 0).toFixed(2) }}</span>
+    <!-- Payment Modal -->
+    <div v-if="showPaymentModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+      <div class="w-full max-w-sm bg-white rounded-xl shadow-xl p-6 space-y-4">
+        <div class="flex justify-between items-center border-b pb-3">
+          <h3 class="text-lg font-semibold">Process Payment</h3>
+          <button class="text-gray-500 hover:text-gray-800" @click="closePaymentModal">✕</button>
         </div>
 
-        <label class="block text-sm mb-1">Amount Tendered</label>
-        <input type="number" step="0.01" min="0" v-model.number="tendered" class="w-full border rounded p-2 mb-2" />
+        <p class="text-sm text-gray-700">
+          Order #{{ (paymentOrder?._id || paymentOrder?.id)?.toString().slice(0, 6) }}
+        </p>
+        <p>Total: <span class="font-bold text-emerald-600">${{ Number(paymentOrder?.total || 0).toFixed(2) }}</span></p>
 
-        <div class="mb-3 text-sm">
-          Change: <span class="font-semibold">${{ (Number(tendered || 0) - Number(paymentOrder?.total || 0)).toFixed(2)
-          }}</span>
+        <label class="block text-sm font-medium">Amount Tendered</label>
+        <input
+          v-model.number="tendered"
+          type="number"
+          class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-emerald-500"
+          min="0" step="0.01"
+        />
+
+        <p class="text-sm">Change:
+          <span class="font-semibold text-blue-600">
+            ${{ (Number(tendered || 0) - Number(paymentOrder?.total || 0)).toFixed(2) }}
+          </span>
+        </p>
+
+        <div v-if="paymentError" class="text-red-600 text-sm">{{ paymentError }}</div>
+
+        <div class="flex justify-end gap-3 pt-3 border-t">
+          <button class="w-full mt-2 bg-teal-600 hover:bg-teal-700 text-white py-2 rounded-lg font-medium0"
+            @click="confirmPayment"
+            :disabled="paymentLoading">
+            {{ paymentLoading ? 'Processing...' : 'Confirm' }}
+          </button>
+          <button class="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-medium"
+            @click="printReceipt(paymentOrder?._id || paymentOrder?.id)">
+            Print Receipt
+          </button>
         </div>
 
-        <div v-if="paymentError" class="text-red-600 text-sm mb-2">{{ paymentError }}</div>
-
-        <div class="flex justify-end gap-2">
-          <button class="px-3 py-1 rounded bg-gray-100" @click="closePaymentModal"
-            :disabled="paymentLoading">Cancel</button>
-          <button class="px-3 py-1 rounded bg-emerald-600 text-white" @click="confirmPayment"
-            :disabled="paymentLoading">{{ paymentLoading ? 'Processing...' : 'Confirm Payment' }}</button>
-        </div>
       </div>
     </div>
   </div>

@@ -32,28 +32,13 @@ body {
   border-left: 4px solid #ef4444;
 }
 
-@keyframes heartbeat {
-  0% {
-    transform: scale(1);
-  }
-  10% {
-    transform: scale(1.12);
-  }
-  20% {
-    transform: scale(1);
-  }
-  30% {
-    transform: scale(1.12);
-  }
-  40% {
-    transform: scale(1);
-  }
-  100% {
-    transform: scale(1);
-  }
+@keyframes softBeat {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.06); }
+  60% { transform: scale(1.02); }
+  100% { transform: scale(1); }
 }
 
-/* Register it as a Tailwind utility */
 .animate-heartbeat {
-  animation: heartbeat 1.2s ease-in-out infinite;
+  animation: softBeat 1.6s ease-in-out infinite;
 }
