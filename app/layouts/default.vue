@@ -36,25 +36,11 @@
     <main class="h-[calc(100vh-4rem)] flex overflow-hidden">
 
       <!-- Sidebar -->
-      <aside class="bg-teal-600 text-white flex flex-col h-full transition-all duration-300 z-40" :class="[
+      <aside class="bg-teal-600 text-white flex flex-col h-full transition-all duration-300 ease-in-out z-40" :class="[
         isMobile
           ? (sidebarOpen ? 'w-16 p-2' : 'w-16 p-2')
           : (sidebarOpen ? 'w-60 p-4' : 'w-16 p-2')
       ]">
-        <div v-if="!isMobile" class="flex items-center mb-4 h-10">
-          <button @click="sidebarOpen = !sidebarOpen"
-            class="flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition">
-            <LucideMenu v-if="!sidebarOpen" class="w-6 h-6" />
-            <LucideSidebarClose v-else class="w-6 h-6" />
-          </button>
-
-          <!-- Menu Title (desktop only) -->
-          <span v-if="sidebarOpen && !isMobile" class="ml-3 text-md font-semibold tracking-wide text-white/90">
-            Menu
-          </span>
-        </div>
-        <!-- Divider -->
-        <div v-if="!isMobile" class="border-t border-white/20 mb-3"></div>
         <nav class="space-y-1 overflow-y-auto">
           <!-- Cashier/Admin -->
           <NuxtLink v-if="
@@ -62,7 +48,7 @@
             auth.user?.role === 'waiter' ||
             auth.user?.role === 'chef' ||
             auth.user?.role === 'admin'
-          " to="/" class="flex items-center gap-3 px-2 py-2 rounded hover:bg-teal-500/80 transition"
+          " to="/" class="flex items-center gap-3 px-2 py-2 rounded hover:bg-teal-500/80 transition mb-3"
             :class="isActive('/') ? 'bg-white/30' : 'text-white/90'" @click="sidebarOpen = false" title="POS Dashboard">
             <LucideStore class="w-5 h-5" />
             <!-- Hide text when collapsed (desktop only) -->
@@ -161,6 +147,33 @@
             </button>
           </div>
         </div>
+        <!-- Sidebar bottom toggle -->
+        <div
+          class="mt-auto pt-3 border-t border-white/20 flex justify-center"
+        >
+          <button
+            @click="sidebarOpen = !sidebarOpen"
+            class="flex items-center gap-2 px-3 py-2 rounded-lg
+                   bg-white/10 hover:bg-white/20 transition w-full justify-center"
+            :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
+          >
+            <LucideChevronLeft
+              v-if="sidebarOpen"
+              class="w-5 h-5"
+            />
+            <LucideChevronRight
+              v-else
+              class="w-5 h-5"
+            />
+
+            <span
+              v-if="sidebarOpen && !isMobile"
+              class="text-sm"
+            >
+              Collapse
+            </span>
+          </button>
+        </div>
       </aside>
 
       <!-- Page content -->
@@ -173,7 +186,7 @@
 </template>
 
 <script setup lang="ts">
-import { LucideBell, LucideBellOff, LucideChartBar, LucideList, LucideListOrdered, LucideLogOut, LucideMenu, LucideMenuSquare, LucideSidebarClose, LucideStore, LucideTable2, LucideTableConfig, LucideUserCircle } from 'lucide-vue-next';
+import { LucideBell, LucideBellOff, LucideChartBar, LucideChevronLeft, LucideChevronRight, LucideList, LucideListOrdered, LucideLogOut, LucideMenu, LucideMenuSquare, LucideSidebarClose, LucideStore, LucideTable2, LucideTableConfig, LucideUserCircle } from 'lucide-vue-next';
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 const auth = useAuthStore();
 const route = useRoute();
